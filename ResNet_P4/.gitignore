@@ -1,0 +1,6 @@
+datasets
+logs
+weights
+__pycache__
+image_class
+Try.ipynb
