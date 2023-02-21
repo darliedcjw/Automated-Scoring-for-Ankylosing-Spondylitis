@@ -173,6 +173,9 @@ class ResNet152(nn.Module):
         return x
 
 if __name__ == "__main__":
-    x = torch.randn(4,3,224,224)
+    x = torch.randn(16,3,224,224)
     model = ResNet152(3, 2)
     out = model(x)
+    print(out)
+    a, b = torch.max(out, dim=1)
+    print(list(zip(a.tolist(), b.tolist())))

@@ -2,8 +2,8 @@ import ast
 from datetime import datetime
 import argparse
 
-from Dataset import COCODataset
-from Train import Train
+from dataset import COCODataset
+from train import Train
 
 
 import torch

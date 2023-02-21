@@ -3,7 +3,7 @@ from tqdm import tqdm
 from datetime import datetime
 
 from HRnet import HRNet
-from Loss import JointsMSELoss
+from loss import JointsMSELoss
 from misc.visualization import save_images
 from misc.checkpoint import save_checkpoint
 from misc.utils import compute_distance
@@ -297,7 +297,7 @@ class Train():
         print('\nTraining ended @ %s' % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 if __name__ == '__main__':
-    from Dataset import COCODataset
+    from dataset import COCODataset
     import ast
 
     # coco_root_path = './datasets/COCO'

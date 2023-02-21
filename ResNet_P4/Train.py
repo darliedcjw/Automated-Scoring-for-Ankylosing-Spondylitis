@@ -9,6 +9,7 @@ from tqdm import tqdm
 from datetime import datetime
 
 from model import ResNet152
+from loss import focal_loss
 from utils import save_checkpoint
 
 
@@ -24,6 +25,7 @@ class Train():
         learning_rate,
         momentum,
         optimizer,
+        loss,
         num_workers,
         device,
         use_tensorboard,
@@ -82,7 +84,10 @@ class Train():
 
 
         # Loss
-        self.loss_fn = nn.CrossEntropyLoss().to(self.device)
+        if loss == 'BCE':
+            self.loss_fn = nn.CrossEntropyLoss().to(self.device)
+        elif loss == 'FL':
+            self.loss_fn = focal_loss(wf=0.1, fp=2).to(self.device)
 
 
         # DataLoader
