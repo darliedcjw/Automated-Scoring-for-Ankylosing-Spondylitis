@@ -34,7 +34,6 @@ class Train():
         self.ds_train = ds_train
         self.ds_val = ds_val
         self.log_path = log_path
-        self.num_classes = num_classes
         self.epochs = epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
@@ -70,7 +69,7 @@ class Train():
 
 
         # Model
-        self.model = ResNet152().to(device)
+        self.model = ResNet152(in_channels=3, num_classes=num_classes).to(device)
 
         # Optimizer
         if optimizer == 'SGD':
@@ -84,10 +83,10 @@ class Train():
 
 
         # Loss
-        if loss == 'BCE':
+        if loss == 'CE':
             self.loss_fn = nn.CrossEntropyLoss().to(self.device)
         elif loss == 'FL':
-            self.loss_fn = focal_loss(wf=0.1, fp=2).to(self.device)
+            self.loss_fn = focal_loss(wf=0.3, fp=2).to(self.device)
 
 
         # DataLoader
@@ -117,7 +116,7 @@ class Train():
 
             output = self.model(image)
 
-            loss = 0.5 * self.loss_fn(output, label)
+            loss = self.loss_fn(output, label)
 
             loss.backward()
 
@@ -157,7 +156,7 @@ class Train():
 
                 output = self.model(image)
 
-                loss = 0.5 * self.loss_fn(output, label)
+                loss =  self.loss_fn(output, label)
 
                 pred = torch.argmax(output, dim=1)
                 acc = torch.eq(pred, label).sum() / self.batch_size
