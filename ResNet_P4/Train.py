@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.optim import SGD, Adam, RMSprop
+from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -8,8 +9,8 @@ import os
 from tqdm import tqdm
 from datetime import datetime
 
-from model import ResNet152
 from loss import focal_loss
+from model import ResNet152
 from utils import save_checkpoint
 
 
@@ -23,6 +24,7 @@ class Train():
         epochs,
         batch_size,
         learning_rate,
+        lr_scheduler,
         momentum,
         optimizer,
         loss,
@@ -37,6 +39,7 @@ class Train():
         self.epochs = epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+        self.lr_scheduler = lr_scheduler
         self.momentum = momentum
         self.num_workers = num_workers
         self.use_tensorboard = use_tensorboard
@@ -81,6 +84,8 @@ class Train():
         else:
             raise NotImplementedError('Please specify the correct optimizer!')        
 
+        if self.lr_scheduler != None:
+            self.scheduler = MultiStepLR(self.optimizer, milestones=lr_scheduler, gamma=0.1)
 
         # Loss
         if loss == 'CE':
@@ -179,16 +184,11 @@ class Train():
         save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_last.pth'), epoch=self.epoch + 1, 
                             model=self.model, optimizer=self.optimizer, params=self.parameters)
         
-        if self.best_loss is None or self.best_loss > self.mean_loss_val:
+        if self.best_loss is None or self.best_loss > self.mean_loss_val and self.best_acc <= self.mean_acc_val:
             self.best_loss = self.mean_loss_val
-            print('best_loss %f at epoch %d' % (self.best_loss, self.epoch + 1))
-            save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_best_loss_{}.pth'.format(self.best_loss)), epoch=self.epoch + 1,
-                            model=self.model, optimizer=self.optimizer, params=self.parameters)
-
-        if self.best_acc is None or self.best_acc < self.mean_acc_val:
             self.best_acc = self.mean_acc_val
-            print('best_acc %f at epoch %d' % (self.best_acc, self.epoch + 1))
-            save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_best_acc_{}.pth'.format(self.best_acc)), epoch=self.epoch + 1,
+            print('best metrics: loss - {0:.4f}, acc - {1:.4f} at epoch {2}'.format(self.best_loss, self.best_acc, self.epoch + 1))
+            save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_best_{0:.4f}_{1:.4f}.pth'.format(self.best_loss, self.best_acc)), epoch=self.epoch + 1,
                             model=self.model, optimizer=self.optimizer, params=self.parameters)
 
     def run(self):
@@ -211,6 +211,9 @@ class Train():
             self._val()
 
             self._checkpoint()
+
+            if self.lr_scheduler != None:
+                self.scheduler.step()
 
         if self.use_tensorboard:
             self.summary_writer.close()

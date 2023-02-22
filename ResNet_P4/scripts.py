@@ -16,6 +16,7 @@ def main(
     epochs,
     batch_size,
     learning_rate,
+    lr_scheduler,
     momentum,
     optimizer,
     loss,
@@ -53,6 +54,7 @@ def main(
                 epochs,
                 batch_size,
                 learning_rate,
+                lr_scheduler,
                 momentum,
                 optimizer,
                 loss,
@@ -73,7 +75,8 @@ if __name__ == '__main__':
     parser.add_argument('--num_classes', '-c', help='Number of classes', type=int, default=2)
     parser.add_argument('--epochs', '-e', help='Number of epochs', type=int, default=3000) 
     parser.add_argument('--batch_size', '-b', help='Training batch size', type=int, default=16)
-    parser.add_argument('--learning_rate', '-r', help='Specify learning rate', type=float, default=0.0001)
+    parser.add_argument('--learning_rate', '-r', help='Specify learning rate', type=float, default=0.001)
+    parser.add_argument('--lr_scheduler', '-lrs', help='Specify schedule', type=int, nargs='*', action='store', default=None)
     parser.add_argument('--momentum', '-m', help='Momentum', type=float, default=0.9)
     parser.add_argument('--optimizer', '-o', help='Specify optimizer: SGD, Adam, RMSprop', type=str, default='Adam')
     parser.add_argument('--loss', '-l', help='Specify loss function: CE, FL', type=str, default='FL')
