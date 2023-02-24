@@ -50,7 +50,7 @@ class COCODataset():
         self.data_path = os.path.join(self.root_path, self.data_version)
         
         self.annotation_path = os.path.join(
-            self.root_path, 'annotations', 'person_keysspoints_{}.json'.format(self.data_version)
+            self.root_path, 'annotations', 'person_keypoints_{}.json'.format(self.data_version)
         )
 
         self.image_size = (self.image_width, self.image_height)
@@ -104,16 +104,16 @@ class COCODataset():
 
 
                     for pt in range(self.keys):
-                        if obj['keyspoints'][pt * 3 + 0] == 0 and obj['keyspoints'][pt * 3 + 1] == 0: # Annotation methods: Set visibility to 0
+                        if obj['keypoints'][pt * 3 + 0] == 0 and obj['keypoints'][pt * 3 + 1] == 0: # Annotation methods: Set visibility to 0
                             t_vis = 0
                             points_visibility[pt, 0] = t_vis
                             points_visibility[pt, 1] = t_vis
 
 
                         else:                     
-                            points[pt, 0] = obj['keyspoints'][pt * 3 + 0] # 1st Column: X-Axis
-                            points[pt, 1] = obj['keyspoints'][pt * 3 + 1] # 2nd Column: Y-Axis
-                            t_vis = int(np.clip(obj['keyspoints'][pt * 3 + 2], 0, 1)) # Clipping it between 0 & 1
+                            points[pt, 0] = obj['keypoints'][pt * 3 + 0] # 1st Column: X-Axis
+                            points[pt, 1] = obj['keypoints'][pt * 3 + 1] # 2nd Column: Y-Axis
+                            t_vis = int(np.clip(obj['keypoints'][pt * 3 + 2], 0, 1)) # Clipping it between 0 & 1
                             points_visibility[pt, 0] = t_vis
                             points_visibility[pt, 1] = t_vis
 
@@ -355,16 +355,16 @@ class COCODataset():
 
 if __name__ == '__main__':
     import cv2
-    
+    import matplotlib.pyplot as plt
     coco = COCODataset()
     coco.__len__()
     for index in range(len(coco)): 
         item = coco[index]
-        image = np.transpose(item[0].numpy(), (1, 2, 0)).copy() 
-        target = item[1]
-        points = item[3]['points']
-        points_vis = item[3]['points_visibility']
-        points_d = item[3]['points_distance']
-        print(points_d)
+        p = item[-1]['points']
+        image = np.transpose(item[0].numpy(), (,,0))
+        for index, pair in enumerate(p):
+            image = cv2.circle(image, (int(pair[0]), int(pair[1])), radius=5, color=(255, 255, 255), thickness=-1)
+        cv2.imshow('name', image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         break
-    

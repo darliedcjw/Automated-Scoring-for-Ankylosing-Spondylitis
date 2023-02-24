@@ -184,7 +184,7 @@ class Train():
         save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_last.pth'), epoch=self.epoch + 1, 
                             model=self.model, optimizer=self.optimizer, params=self.parameters)
         
-        if self.best_loss is None or self.best_loss > self.mean_loss_val and self.best_acc <= self.mean_acc_val:
+        if self.best_loss is None or self.best_acc <= self.mean_acc_val:
             self.best_loss = self.mean_loss_val
             self.best_acc = self.mean_acc_val
             print('best metrics: loss - {0:.4f}, acc - {1:.4f} at epoch {2}'.format(self.best_loss, self.best_acc, self.epoch + 1))
