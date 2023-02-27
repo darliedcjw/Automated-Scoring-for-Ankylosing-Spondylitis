@@ -196,7 +196,6 @@ class Train():
 
                 acc = compute_accuracy(output, label, self.batch_size)
 
-
                 total_loss_val += loss.item()
                 total_acc_val += acc.item()
 
@@ -253,9 +252,8 @@ class Train():
                                 self.best_acc,
                                 self.mean_precision_val,
                                 self.mean_recall_val,
-                                self.mean_f1_val,
-                                )
-                            )    
+                                self.mean_f1_val))
+                    
             
     def run(self):
 
@@ -265,10 +263,21 @@ class Train():
         self.best_acc = None
 
         for self.epoch in range(self.epochs):
+            
             self.mean_loss_train = 0
             self.mean_loss_val = 0
+            
             self.mean_acc_train = 0
             self.mean_acc_val = 0
+
+            self.mean_precision_train = 0
+            self.mean_precision_val = 0
+
+            self.mean_recall_train = 0
+            self.mean_recall_val = 0
+            
+            self.mean_f1_train = 0
+            self.mean_f1_val = 0
 
             print('\nEpoch: {}'.format(self.epoch + 1))
 
