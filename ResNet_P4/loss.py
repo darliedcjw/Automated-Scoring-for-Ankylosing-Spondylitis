@@ -20,6 +20,7 @@ class focal_loss(nn.Module):
                 loss += -self.wf*(1 - p)**self.fp*torch.log(p)
             elif class_idx == 1:
                 loss += -(1-self.wf)*(1 - p)**self.fp*torch.log(1 - p)
-        return loss
+
+        return loss / outputs.shape[0]
         
 

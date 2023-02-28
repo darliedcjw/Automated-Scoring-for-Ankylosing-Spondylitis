@@ -5,12 +5,17 @@ resnet152_config = [
     (64, 7, 2), # Out, Kernel, Stride
     "MP",
     ["B", 3, False], # Residual Block, num_repeats, downsample
-    ["B", 8, True],
-    ["B", 36, True],
-    ["B", 3, True],
+    ["B", 4, True], #8
+    ["B", 18, True], #36
+    ["B", 3, True], #3
     "AP", # Average Pooling
     "F", # Flattern
-    ["L", 2048, 2] # FC, in, out
+    ["L", 2048, 1024], # FC, in, out
+    ["L", 1024, 512],
+    ["L", 512, 256],
+    ["L", 256, 128],
+    ["L", 128, 32],
+    ["L", 32, 2]
 ] 
 
 
