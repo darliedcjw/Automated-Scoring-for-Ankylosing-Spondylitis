@@ -7,6 +7,7 @@ import argparse
 
 from train import Train
 
+torch.manual_seed(0)
 
 def main(
     train_path,
@@ -22,7 +23,7 @@ def main(
     loss,
     num_workers,
     device,
-    use_tensorboard,
+    use_tensorboard
     ):
 
     transform = T.Compose([
@@ -67,19 +68,18 @@ def main(
     
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_path', '-tp', help='Train folder', type=str, default='datasets/1/train')
     parser.add_argument('--val_path', '-vp', help='Val folder', type=str, default='datasets/1/val')
-    parser.add_argument('--log_path', '-lp', help='Log folder', type=str, default='logs')
+    parser.add_argument('--log_path', '-lp', help='Log folder', type=str, default='logs/ADAM')
     parser.add_argument('--num_classes', '-c', help='Number of classes', type=int, default=2)
     parser.add_argument('--epochs', '-e', help='Number of epochs', type=int, default=100) 
-    parser.add_argument('--batch_size', '-b', help='Training batch size', type=int, default=16)
+    parser.add_argument('--batch_size', '-b', help='Training batch size', type=int, default=4)
     parser.add_argument('--learning_rate', '-r', help='Specify learning rate', type=float, default=0.001)
     parser.add_argument('--lr_scheduler', '-lrs', help='Specify schedule', type=int, nargs='*', action='store', default=None)
     parser.add_argument('--momentum', '-m', help='Momentum', type=float, default=0.9)
     parser.add_argument('--optimizer', '-o', help='Specify optimizer: SGD, Adam, RMSprop', type=str, default='Adam')
-    parser.add_argument('--loss', '-l', help='Specify loss function: CE, FL', type=str, default='CE')
+    parser.add_argument('--loss', '-l', help='Specify loss function: CE, FL', type=str, default='FL')
     parser.add_argument('--num_workers', '-w', help='Number of workers', type=int, default=8)
     parser.add_argument('--device', '-d', help='Device', type=str, default=None)
     parser.add_argument('--use_tensorboard', '-tb', help='Use tensorboard', type=bool, default=True)

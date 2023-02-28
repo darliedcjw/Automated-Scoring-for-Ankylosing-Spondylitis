@@ -1,10 +1,12 @@
 import torch
 import torch.nn as nn
 
+torch.manual_seed(0)
+
 class focal_loss(nn.Module):
     def __init__(self, 
-        wf=0.1,
-        fp=2):
+        wf,
+        fp):
         super().__init__()
 
         self.wf = wf
@@ -12,8 +14,8 @@ class focal_loss(nn.Module):
 
     def forward(self, outputs, labels):
         outputs = nn.Softmax(dim=1)(outputs)
-        for index, output in enumerate(outputs):
-            loss = 0
+        loss = 0
+        for index, output in enumerate(outputs): 
             class_idx = labels[index]
             p = output[class_idx]
             if class_idx == 0:
@@ -22,5 +24,3 @@ class focal_loss(nn.Module):
                 loss += -(1-self.wf)*(1 - p)**self.fp*torch.log(1 - p)
 
         return loss / outputs.shape[0]
-        
-

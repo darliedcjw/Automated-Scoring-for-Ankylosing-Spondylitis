@@ -1,6 +1,8 @@
 import os
 import torch
 
+torch.manual_seed(0)
+
 def compute_accuracy(output, label, size):
     '''
     Compute accuracy

@@ -1,21 +1,18 @@
 import torch
 import torch.nn as nn
 
+torch.manual_seed(0)
+
 resnet152_config = [
     (64, 7, 2), # Out, Kernel, Stride
     "MP",
     ["B", 3, False], # Residual Block, num_repeats, downsample
-    ["B", 4, True], #8
-    ["B", 18, True], #36
+    ["B", 8, True], #8
+    ["B", 36, True], #36
     ["B", 3, True], #3
     "AP", # Average Pooling
     "F", # Flattern
-    ["L", 2048, 1024], # FC, in, out
-    ["L", 1024, 512],
-    ["L", 512, 256],
-    ["L", 256, 128],
-    ["L", 128, 32],
-    ["L", 32, 2]
+    ["L", 2048, 2], # FC, in, out
 ] 
 
 
@@ -184,17 +181,12 @@ class ResNet152(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight)
-
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
             
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
 
             elif isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(m.weight)
-                nn.init.constant_(m.bias, 0)
 
 
 if __name__ == "__main__":

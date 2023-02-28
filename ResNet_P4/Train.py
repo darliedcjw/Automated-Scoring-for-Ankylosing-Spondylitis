@@ -13,6 +13,7 @@ from loss import focal_loss
 from model import ResNet152
 from utils import save_checkpoint, compute_accuracy, compute_precision, compute_recall, compute_f1_score
 
+torch.manual_seed(0)
 
 class Train():
     
@@ -74,6 +75,7 @@ class Train():
 
         # Model
         self.model = ResNet152(in_channels=3, num_classes=num_classes).to(device)
+        # self.model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet152', pretrained=False).to(self.device)
 
         # Optimizer
         if optimizer == 'SGD':
@@ -92,7 +94,7 @@ class Train():
         if loss == 'CE':
             self.loss_fn = nn.CrossEntropyLoss().to(self.device)
         elif loss == 'FL':
-            self.loss_fn = focal_loss(wf=0.3, fp=2).to(self.device)
+            self.loss_fn = focal_loss(wf=0.25, fp=2).to(self.device)
 
 
         # DataLoader
@@ -247,7 +249,7 @@ class Train():
                         f.write('\n')
                     f.write(
                         'Epoch: {0}, Loss: {1:.4f}, Accuracy: {2:.4f}, Precision: {3}, Recall: {4}, F1 Score: {5}'
-                        .format(self.epoch,
+                        .format(self.epoch + 1,
                                 self.best_loss,
                                 self.best_acc,
                                 self.mean_precision_val,
