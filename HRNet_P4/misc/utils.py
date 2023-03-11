@@ -78,7 +78,7 @@ def evaluate_pck_accuracy(output, target, hm_type='gaussian', thr=0.02):
     """
     idx = list(range(output.shape[1]))
     if hm_type == 'gaussian':
-        pred, _ = get_max_preds(output) # (Batch, 17, 2) where 2: Column and Row Number (Confined within 64, 48)
+        pred, _ = get_max_preds(output) # (Batch, 12, 2) where 2: Column and Row Number (Confined within 64, 48)
         target, _ = get_max_preds(target) # Column and Row Number (Confined within 64, 48)
         h = output.shape[2]
         w = output.shape[3]
