@@ -19,7 +19,7 @@ def main(exp_name,
          lr_decay_steps='(170, 200)',
          lr_decay_gamma=0.1,
          optimizer='Adam',
-         weight_decay=0.,
+         weight_decay=0.0,
          momentum=0.9,
          nesterov=False,
          pretrained_weight_path=None,
@@ -30,7 +30,8 @@ def main(exp_name,
          model_bn_momentum=0.1,
          image_resolution='(256, 192)',
          coco_root_path="./datasets/COCO",
-         device=None):
+         device=None,
+         disable_seed=False):
 
     if device is not None:
         device = torch.device(device)
@@ -44,21 +45,25 @@ def main(exp_name,
 
     print("\nStarting experiment `%s` @ %s\n" % (exp_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
+    use_seed = not disable_seed
     use_dist = not disable_dist
     lr_decay = not disable_lr_decay
     use_tensorboard = not disable_tensorboard_log
     image_resolution = ast.literal_eval(image_resolution)
     lr_decay_steps = ast.literal_eval(lr_decay_steps)
 
+    if use_seed:
+        torch.manual_seed(0)
+
     print("\nLoading train and validation datasets...")
 
     # load train and val datasets
     ds_train = COCODataset(
-        root_path=coco_root_path, data_version="default", keys=model_key, use_dist=use_dist, is_train=True, is_rotate=False, image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True)
+        root_path=coco_root_path, data_version="default", keys=model_key, use_dist=use_dist, is_train=True, is_rotate=False, is_flip=False, is_scale=False, image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True)
     print('Training Size: {}'.format(ds_train.__len__()))
 
     ds_val = COCODataset(
-        root_path=coco_root_path, data_version="default", keys=model_key, use_dist=use_dist, is_train=False, is_rotate=False, image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True)
+        root_path=coco_root_path, data_version="default_val", keys=model_key, use_dist=use_dist, is_train=False, image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True)
     print('Validation Size: {}'.format(ds_val.__len__()))
 
     train = Train(
@@ -105,7 +110,7 @@ if __name__ == '__main__':
     parser.add_argument("--lr_decay_gamma", help="learning rate decay gamma", type=float, default=0.1)
     parser.add_argument("--optimizer", "-o", help="optimizer name. Currently, only `SGD` and `Adam` are supported.",
                         type=str, default='Adam')
-    parser.add_argument("--weight_decay", help="weight decay", type=float, default=0.)
+    parser.add_argument("--weight_decay", help="weight decay", type=float, default=0.0)
     parser.add_argument("--momentum", "-m", help="momentum", type=float, default=0.9)
     parser.add_argument("--nesterov", help="enable nesterov", action="store_true")
     parser.add_argument("--pretrained_weight_path", "-p",
@@ -120,6 +125,7 @@ if __name__ == '__main__':
     parser.add_argument("--image_resolution", "-r", help="image resolution", type=str, default='(256, 192)')
     parser.add_argument("--coco_root_path", help="COCO dataset root path", type=str, default="./datasets/COCO")
     parser.add_argument("--device", "-d", help="device", type=str, default=None)
+    parser.add_argument("--disable_seed", "-ds", help="disable seed", action="store_true")
     args = parser.parse_args()
 
     main(**args.__dict__)       

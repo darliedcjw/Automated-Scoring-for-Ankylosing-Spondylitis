@@ -94,15 +94,15 @@ class Train():
         if loss == 'CE':
             self.loss_fn = nn.CrossEntropyLoss().to(self.device)
         elif loss == 'FL':
-            self.loss_fn = focal_loss(wf=0.25, fp=2).to(self.device)
+            self.loss_fn = focal_loss(wf=0.15, fp=2).to(self.device)
 
 
         # DataLoader
-        self.dl_train = DataLoader(self.ds_train, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=True)
+        self.dl_train = DataLoader(self.ds_train, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
         self.len_dl_train = len(self.dl_train)
         print('Training Data Loaded: {}'.format(self.len_dl_train))
 
-        self.dl_val = DataLoader(self.ds_val, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        self.dl_val = DataLoader(self.ds_val, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
         self.len_dl_val = len(self.dl_val)
         print('Validation Data Loaded {}'.format(self.len_dl_val))
     

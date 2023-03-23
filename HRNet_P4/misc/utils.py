@@ -69,7 +69,7 @@ def get_angle(pt1, pt2):
 '''
 Evaluation
 '''
-def evaluate_pck_accuracy(output, target, hm_type='gaussian', thr=0.02):
+def evaluate_pck_accuracy(output, target, hm_type='gaussian', thr=0.03):
     """
     Calculate accuracy according to PCK,
     but uses ground truth heatmap rather than y,x locations

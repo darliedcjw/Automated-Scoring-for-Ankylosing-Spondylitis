@@ -35,12 +35,12 @@ class JointsMSELoss(nn.Module):
                 heatmap_pred = heatmaps_pred[idx].squeeze() # Flatten last 2 dimensions
                 heatmap_gt = heatmaps_gt[idx].squeeze() # Flatten last 2 dimensions
 
-                loss += 0.8 * 0.5 * (self.criterion(
+                loss += 1 * 0.5 * (self.criterion(
                     heatmap_pred.mul(target_weight[:, idx]), 
                     heatmap_gt.mul(target_weight[:, idx])
                     ))
             
-            loss += 0.2 * 0.5 * (self.criterion(output_distance, target_distance))        
+            loss += 0.1 * 0.5 * (self.criterion(output_distance, target_distance))        
 
         elif self.use_target_weight and not self.use_point_dist:     
             if target_weight is None:

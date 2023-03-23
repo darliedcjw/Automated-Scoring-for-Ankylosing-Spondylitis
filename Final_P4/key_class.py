@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import tkinter as tk
 import cv2
+import json
 import re
 import shutil
 import argparse
@@ -200,162 +201,160 @@ def app(device, res_cpath):
         # Save
         elif key == ord('s'):
             print('\nSaving!\n')
-            if len(mSASSS) == 0:
-
-                window = tk.Tk()
-                window.title('Manual mSASSS Score')
-                window.minsize(width=200, height=300)
-                window.grid_columnconfigure((0, 1), weight=1) 
-
-                tk.Label(master=window, text="Manual mSASSS Score").grid(row=0, columnspan=2, sticky='ew')
-                tk.Label(master=window, text="Point 1").grid(row=1, column=0)
-                entry1 = tk.Entry(master=window)
-                entry1.grid(row=1, column=1)
-                
-                tk.Label(master=window, text="Point 2").grid(row=2, column=0)
-                entry2 = tk.Entry(master=window)
-                entry2.grid(row=2, column=1) 
-                
-                tk.Label(master=window, text="Point 3").grid(row=3, column=0)
-                entry3 = tk.Entry(master=window)
-                entry3.grid(row=3, column=1)           
-                
-                tk.Label(master=window, text="Point 4").grid(row=4, column=0)
-                entry4 = tk.Entry(master=window)
-                entry4.grid(row=4, column=1)
-                
-                tk.Label(master=window, text="Point 5").grid(row=5, column=0)
-                entry5 = tk.Entry(master=window)
-                entry5.grid(row=5, column=1)      
-                
-                tk.Label(master=window, text="Point 6").grid(row=6, column=0)
-                entry6 = tk.Entry(master=window)
-                entry6.grid(row=6, column=1)
-                
-                tk.Label(master=window, text="Point 7").grid(row=7, column=0)
-                entry7 = tk.Entry(master=window)
-                entry7.grid(row=7, column=1)
-                
-                tk.Label(master=window, text="Point 8").grid(row=8, column=0) 
-                entry8 = tk.Entry(master=window)
-                entry8.grid(row=8, column=1)
-                
-                tk.Label(master=window, text="Point 9").grid(row=9, column=0)
-                entry9 = tk.Entry(master=window)
-                entry9.grid(row=9, column=1)
-                
-                tk.Label(master=window, text="Point 10").grid(row=10, column=0)
-                entry10 = tk.Entry(master=window)
-                entry10.grid(row=10, column=1)
-                
-                tk.Label(master=window, text="Point 11").grid(row=11, column=0)
-                entry11 = tk.Entry(master=window)
-                entry11.grid(row=11, column=1)
-                
-                tk.Label(master=window, text="Point 12").grid(row=12, column=0)
-                entry12 = tk.Entry(master=window)
-                entry12.grid(row=12, column=1)
-
+            
+            # Check Annotation Path Exist
+            if os.path.exists('Train_Case/COCO/annotations'):
+                pass
             else:
-                window = tk.Tk()
-                window.title('mSASSS Score')
-                window.minsize(width=200, height=300)
-                window.grid_columnconfigure(tuple(range(12)), weight=1)
+                os.makedirs('Train_Case/COCO/annotations')
 
-                score_1 = mSASSS['score_1']
-                score_2 = mSASSS['score_2']
-                score_3 = mSASSS['score_3']
-                score_4 = mSASSS['score_4']
-                score_5 = mSASSS['score_5']
-                score_6 = mSASSS['score_6']
-                score_7 = mSASSS['score_7']
-                score_8 = mSASSS['score_8']
-                score_9 = mSASSS['score_9']
-                score_10 = mSASSS['score_10']
-                score_11 = mSASSS['score_11']
-                score_12 = mSASSS['score_12']
+            # Check Image Path Exist
+            if os.path.exists('Train_Case/COCO/default'):
+                last_count = len(os.listdir('Train_Case/COCO/default'))
+                new_count = last_count + 1
+            else:
+                os.makedirs('Train_Case/COCO/default')
 
-                tk.Label(master=window, text="mSASSS Score").grid(row=0, columnspan=2, sticky='ew')
-                tk.Label(master=window, text="Point 1").grid(row=1, column=0)
-                entry1 = tk.Entry(master=window)
-                entry1.insert(0, score_1)
-                entry1.grid(row=1, column=1)
-                
-                tk.Label(master=window, text="Point 2").grid(row=2, column=0)
-                entry2 = tk.Entry(master=window)
-                entry2.insert(0, score_2)
-                entry2.grid(row=2, column=1) 
-                
-                tk.Label(master=window, text="Point 3").grid(row=3, column=0)
-                entry3 = tk.Entry(master=window)
-                entry3.insert(0, score_3)
-                entry3.grid(row=3, column=1)           
-                
-                tk.Label(master=window, text="Point 4").grid(row=4, column=0)
-                entry4 = tk.Entry(master=window)
-                entry4.insert(0, score_4)
-                entry4.grid(row=4, column=1)
-                
-                tk.Label(master=window, text="Point 5").grid(row=5, column=0)
-                entry5 = tk.Entry(master=window)
-                entry5.insert(0, score_5)
-                entry5.grid(row=5, column=1)      
-                
-                tk.Label(master=window, text="Point 6").grid(row=6, column=0)
-                entry6 = tk.Entry(master=window)
-                entry6.insert(0, score_6)
-                entry6.grid(row=6, column=1)
-                
-                tk.Label(master=window, text="Point 7").grid(row=7, column=0)
-                entry7 = tk.Entry(master=window)
-                entry7.insert(0, score_7)
-                entry7.grid(row=7, column=1)
-                
-                tk.Label(master=window, text="Point 8").grid(row=8, column=0)
-                entry8 = tk.Entry(master=window)
-                entry8.insert(0, score_8)
-                entry8.grid(row=8, column=1)
-                
-                tk.Label(master=window, text="Point 9").grid(row=9, column=0)
-                entry9 = tk.Entry(master=window)
-                entry9.insert(0, score_9)
-                entry9.grid(row=9, column=1)
-                
-                tk.Label(master=window, text="Point 10").grid(row=10, column=0)
-                entry10 = tk.Entry(master=window)
-                entry10.insert(0, score_10)
-                entry10.grid(row=10, column=1)
-                
-                tk.Label(master=window, text="Point 11").grid(row=11, column=0)
-                entry11 = tk.Entry(master=window)
-                entry11.insert(0, score_11)
-                entry11.grid(row=11, column=1)
-                
-                tk.Label(master=window, text="Point 12").grid(row=12, column=0)
-                entry12 = tk.Entry(master=window)
-                entry12.insert(0, score_12)
-                entry12.grid(row=12, column=1)
+            # Check Annotation File Exist
+            if os.path.isfile('Train_Case/COCO/annotations/person_keypoints_default.json'):
+                pass
+            else:
+                new_dict = {}
+                keys = ['licenses', 'info', 'categories', 'images', 'annotations']
+                values = [
+                    [{'name': '', 'id': 0, 'url': ''}],
+                    {'contributor': '', 'date_created': '', 'description': '', 'url': '', 'version': '', 'year': ''},
+                    [{'id': 1, 'name': 'Point', 'supercategory': '', 'keypoints': [], 'skeleton': []}],
+                    [],
+                    []
+                    ]
+                pair = list(zip(keys, values))
 
-            # Function
-            def record():
-                global mSASSS
+                for key, value in pair:
+                    new_dict[key] = value
 
-                mSASSS['score_1'] = entry1.get()
-                mSASSS['score_2'] = entry2.get()
-                mSASSS['score_3'] = entry3.get()
-                mSASSS['score_4'] = entry4.get()
-                mSASSS['score_5'] = entry5.get()
-                mSASSS['score_6'] = entry6.get()
-                mSASSS['score_7'] = entry7.get()
-                mSASSS['score_8'] = entry8.get()
-                mSASSS['score_9'] = entry9.get()
-                mSASSS['score_10'] = entry10.get()
-                mSASSS['score_11'] = entry11.get()
-                mSASSS['score_12'] = entry12.get()
-                return window.destroy()
+                with open('Train_Case/COCO/annotations/person_keypoints_default.json', 'w') as f:
+                    json.dump(new_dict, f, skipkeys=True)
+                
 
-            tk.Button(master=window, text="Submit", command=record).grid(row=13, columnspan=2)
-            window.mainloop()
+            # Save Image Training Copy
+            try:
+                cv2.imwrite('Train_Case/COCO/default/{}.png'.format(new_count), image)
+            except UnboundLocalError:
+                print('Create New Count!')
+                new_count = 1
+                cv2.imwrite('Train_Case/COCO/default/{}.png'.format(new_count), image)
+
+            # Image Properties
+            height = image.shape[0]
+            width = image.shape[1]
+
+            image_key = [
+                'id',
+                'width',
+                'height',
+                'file_name',
+                'license',
+                'flickr_url',
+                'coco_url',
+                'date_captured'
+            ]
+
+            image_value = [
+                new_count,
+                width,
+                height,
+                '{}.png'.format(new_count),
+                0,
+                '',
+                '',
+                0
+            ]
+
+            image_list = list(zip(image_key, image_value))
+            
+            image_dict = {}
+            for image_attrib in image_list:
+                key = image_attrib[0]
+                value = image_attrib[1]
+                image_dict[key] = value            
+
+            # Annotation Properties
+            ## Keypoints
+            keypoints = []
+            visibility = np.full(shape=p.shape[0], fill_value=2).astype('float64')
+            p_ser = p.copy().astype('float64')
+            
+            for no_visibility in index_store:
+                visibility[no_visibility] = 0
+
+            ann_p = list(zip(p_ser, visibility))
+            
+            for point, vis in ann_p:
+                keypoints.append(point[0])
+                keypoints.append(point[1])
+                keypoints.append(vis)
+
+            ## Coordinates
+            y_cord = p_ser[..., 1]
+            x_cord = p_ser[..., 0]
+
+            max_y = np.max(y_cord)
+            min_y = np.min(y_cord)
+            y_height = max_y - min_y
+
+            max_x = np.max(x_cord)
+            min_x = np.min(x_cord)
+            x_width = max_x - min_x
+
+            ## BBox
+            bbox = [min_x, min_y, x_width, y_height]
+
+            ## Area
+            area = x_width * y_height
+
+            ann_key = [
+                'id',
+                'image_id',
+                'category_id',
+                'segmentation',
+                'area',
+                'bbox',
+                'iscrowd',
+                'attributes',
+                'keypoints',
+                'num_keypoints'
+            ]
+
+            ann_value = [
+                new_count,
+                new_count,
+                1,
+                [],
+                area,
+                bbox,
+                0,
+                {'occluded': False},
+                keypoints,
+                12
+            ]
+
+            ann_list = list(zip(ann_key, ann_value))
+
+            ann_dict = {}
+            for ann_attrib in ann_list:
+                key = ann_attrib[0]
+                value = ann_attrib[1]
+                ann_dict[key] = value
+            
+            # Save Annotation
+            with open('Train_Case/COCO/annotations/person_keypoints_default.json', 'r') as f:
+                j = json.load(f)
+                j['images'].append(image_dict)
+                j['annotations'].append(ann_dict)
+
+            with open('Train_Case/COCO/annotations/person_keypoints_default.json', 'w') as f:
+                json.dump(j, f)
 
 
         # Select Visibility
@@ -549,7 +548,7 @@ if __name__ == "__main__":
     parser.add_argument('--ipath', '-ip', help='path to image folder', type=str,  default='datasets/COCO/default')
     parser.add_argument('--res_cpath', '-rcp', help='path to resnet checkpoint', type=str,  default='logs/020223_104428/checkpoint_best_acc_0.8055555555555556.pth')
     parser.add_argument('--hr_cpath', '-hcp', help='path to hrnet checkpoint', type=str,  default='logs/20221220_1651/checkpoint_best_acc_0.9928728138145647.pth')
-    parser.add_argument('--device', '-d', help='device', type=str, default='cpu')
+    parser.add_argument('--device', '-d', help='device', type=str, default='cuda:0')
     args = parser.parse_args()
 
     main(**args.__dict__)

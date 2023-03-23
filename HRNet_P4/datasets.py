@@ -2,12 +2,13 @@ import os
 import numpy as np
 from tqdm import tqdm
 import cv2
-import random
 
+import torch
 from torchvision import transforms
 from pycocotools.coco import COCO
 
 from misc.utils import get_resize_AF, affine_transform, evaluate_pck_accuracy
+
 
 
 class COCODataset():
@@ -161,16 +162,16 @@ class COCODataset():
             sf = self.scale_factor
         
             if self.is_scale:
-                if random.random() < self.scale_prob:
-                    s = s * np.clip(random.random() * sf + 1, 1 - sf, 1 + sf)
+                if torch.rand((1)) < self.scale_prob:
+                    s = s * np.clip(torch.randn((1)).item() * sf + 1, 1 - sf, 1 + sf)
             
             if self.is_rotate:
                 # Rotate Positive is anti-clockwise
-                if random.random() < self.rotate_prob:
-                    r = np.clip(random.random() * rf, -rf, rf) # Clip between (-rf*2, rf*2)
+                if torch.rand((1)) < self.rotate_prob:
+                    r = np.clip(torch.randn((1)).item() * rf, -rf, rf) # Clip between (-rf*2, rf*2)
 
             if self.is_flip:
-                if random.random() < self.flip_prob:
+                if torch.rand((1)) < self.flip_prob:
                     image = image[:, ::-1, :] # Rows x Columns and only Columns is flipped
                     points[:, 0] = image.shape[1] - points[:, 0] - 1
                     center[0] = image.shape[1] - center[0] - 1
@@ -352,19 +353,3 @@ class COCODataset():
             raise NotImplementedError
 
         return target, target_weight
-
-if __name__ == '__main__':
-    import cv2
-    import matplotlib.pyplot as plt
-    coco = COCODataset()
-    coco.__len__()
-    for index in range(len(coco)): 
-        item = coco[index]
-        p = item[-1]['points']
-        image = np.transpose(item[0].numpy(), (,,0))
-        for index, pair in enumerate(p):
-            image = cv2.circle(image, (int(pair[0]), int(pair[1])), radius=5, color=(255, 255, 255), thickness=-1)
-        cv2.imshow('name', image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        break

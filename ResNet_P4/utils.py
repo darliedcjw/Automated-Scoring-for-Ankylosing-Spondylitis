@@ -60,7 +60,7 @@ def compute_recall(output, label, num_classes):
     num_classes = number of classes
     '''
     recall = torch.zeros(size=(num_classes,))
-    recall_count = torch.zeros(size=(num_classes,))    
+    recall_count = torch.zeros(size=(num_classes,))
     
     pred = torch.argmax(output, dim=1)
 

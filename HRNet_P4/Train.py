@@ -29,7 +29,7 @@ class Train():
         use_dist=True,
         lr=0.001,
         lr_decay=True,
-        lr_decay_steps=(170, 200),
+        lr_decay_steps=[170, 200],
         lr_decay_gamma=0.1,
         optimizer='Adam',
         weight_decay=0.,
@@ -45,6 +45,7 @@ class Train():
         device=None
         ):
 
+        # torch.manual_seed(0)
         self.exp_name = exp_name
         self.ds_train = ds_train
         self.ds_val = ds_val
@@ -69,9 +70,6 @@ class Train():
         self.model_key = model_key
         self.model_bn_momentum = model_bn_momentum
         self.epoch = 0
-
-        # Seed
-        torch.manual_seed(0)
 
         # torch device
         if device is not None:
@@ -133,12 +131,11 @@ class Train():
         print('Transformation done for {} keypoints'.format(self.model_key))
 
         # Train Loader
-        self.dl_train = DataLoader(self.ds_train, batch_size=self.batch_size, shuffle=True,
-                                   num_workers=self.num_workers, drop_last=True)
+        self.dl_train = DataLoader(self.ds_train, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, drop_last=False)
         self.len_dl_train = len(self.dl_train)
 
         # Val Loader
-        self.dl_val = DataLoader(self.ds_val, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        self.dl_val = DataLoader(self.ds_val, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, drop_last=False)
         self.len_dl_val = len(self.dl_val)
 
         # initialize variables
@@ -246,25 +243,29 @@ class Train():
     
     def _checkpoint(self):
 
-        save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_last.pth'), epoch=self.epoch + 1, model=self.model,
-                        optimizer=self.optim, params=self.parameters)
-
-        if self.best_loss is None or self.best_loss > self.mean_loss_val:
+        save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_last.pth'), epoch=self.epoch + 1, 
+                            model=self.model, optimizer=self.optim, params=self.parameters)
+        
+        if self.best_loss is None or self.best_acc <= self.mean_acc_val:
             self.best_loss = self.mean_loss_val
-            print('best_loss %f at epoch %d' % (self.best_loss, self.epoch + 1))
-            save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_best_loss_{}.pth'.format(self.best_loss)), epoch=self.epoch + 1,
-                            model=self.model, optimizer=self.optim, params=self.parameters)
-        if self.best_acc is None or self.best_acc < self.mean_acc_val:
             self.best_acc = self.mean_acc_val
-            print('best_acc %f at epoch %d' % (self.best_acc, self.epoch + 1))
-            save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_best_acc_{}.pth'.format(self.best_acc)), epoch=self.epoch + 1,
+            print('best metrics: loss - {0:.4f}, acc - {1:.4f} at epoch {2}'.format(self.best_loss, self.best_acc, self.epoch + 1))
+            
+            save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_best_{0:.4f}_{1:.4f}.pth'.format(self.best_loss, self.best_acc)), epoch=self.epoch + 1,
                             model=self.model, optimizer=self.optim, params=self.parameters)
-        if self.best_mAP is None or self.best_mAP < self.mean_mAP_val:
-            self.best_mAP = self.mean_mAP_val
-            print('best_mAP %f at epoch %d' % (self.best_mAP, self.epoch + 1))
-            save_checkpoint(path=os.path.join(self.log_path, 'checkpoint_best_mAP_{}.pth'.format(self.best_mAP)), epoch=self.epoch + 1,
-                            model=self.model, optimizer=self.optim, params=self.parameters)
-
+            
+            with open(os.path.join(self.log_path, 'metrics'), 'a+') as f:
+                    f.seek(0)
+                    data = f.read(100)
+                    if len(data) > 0:
+                        f.write('\n')
+                    f.write(
+                        'Epoch: {0}, Validation Loss: {1:.4f}, Valdation Accuracy: {2:.4f}, Training Loss: {3:.4f}, Training Accuracy: {4:.4f}'
+                        .format(self.epoch + 1,
+                                self.best_loss,
+                                self.best_acc,
+                                self.mean_loss_train,
+                                self.mean_acc_train))
     def run(self):
         """
         Runs the training.
@@ -297,7 +298,7 @@ class Train():
         print('\nTraining ended @ %s' % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 if __name__ == '__main__':
-    from dataset import COCODataset
+    from datasets import COCODataset
     import ast
 
     # coco_root_path = './datasets/COCO'
