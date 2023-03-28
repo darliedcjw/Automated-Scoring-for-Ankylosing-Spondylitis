@@ -17,7 +17,7 @@ from inference import SimpleHRNet, SimpleResNet152
 
 
 def app(device, res_cpath):
-    global resize_image, p, mv, index_store
+    global resize_image, p, mv, index_store, width, height
 
     '''
     b: bounding box
@@ -548,7 +548,7 @@ if __name__ == "__main__":
     parser.add_argument('--ipath', '-ip', help='path to image folder', type=str,  default='datasets/COCO/default')
     parser.add_argument('--res_cpath', '-rcp', help='path to resnet checkpoint', type=str,  default='logs/020223_104428/checkpoint_best_acc_0.8055555555555556.pth')
     parser.add_argument('--hr_cpath', '-hcp', help='path to hrnet checkpoint', type=str,  default='logs/20221220_1651/checkpoint_best_acc_0.9928728138145647.pth')
-    parser.add_argument('--device', '-d', help='device', type=str, default='cuda:0')
+    parser.add_argument('--device', '-d', help='device', type=str, default='cpu')
     args = parser.parse_args()
 
     main(**args.__dict__)
