@@ -9,6 +9,7 @@ import shutil
 import argparse
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 from torchvision.models import resnet152
 from torchvision import transforms
 
@@ -16,7 +17,7 @@ from misc.utils import affine_transform, get_angle
 from inference import SimpleHRNet, SimpleResNet152
 
 
-def app(device, res_cpath):
+def app(device, res_cpath_1, res_cpath_2):
     global resize_image, p, mv, index_store, width, height
 
     '''
@@ -75,6 +76,8 @@ def app(device, res_cpath):
             assert 3 not in index_store and 5 not in index_store, 'Point 4 and Point 6 not visible for comptuation of y buffer!'
             avg_len = abs(p_copy[3] - p_copy[5]).mean()
 
+            images_list = []
+
             for index, pair in enumerate(p_copy):
                 if index % 2 == 1 and index not in index_store:
                     # Rotation
@@ -93,20 +96,41 @@ def app(device, res_cpath):
 
                     # Classification: 3
                     image_crop = image_rot[low_pt[1]:high_pt[1] + 1, low_pt[0]:high_pt[0] + 1, :]
+                    image_crop = cv2.resize(image_crop, (224, 224))
+                    images_list.append(transforms.ToTensor()(image_crop))
+            
+            images_no3_3 = torch.stack(images_list)
 
-                    simpleresnet152 = SimpleResNet152(num_class=2, checkpoint_path=res_cpath, resolution=(224,224), device=torch.device(device))
-                    idx, confidence = simpleresnet152.predict_single(image_crop)
+            simpleres_no3_3 = SimpleResNet152(num_class=2, checkpoint_path=res_cpath_1, resolution=(224, 224), device=torch.device(device))
+            idx_no3_3, confidence_no3_3 = simpleres_no3_3.predict_batch(images_no3_3)
+            
+            index_no3_3 = torch.tensor((range(len((idx_no3_3 == 1)))))
+            
+            crop_list = []
 
-                    print('Point {}:'.format(index + 1), class_idx_1[idx], '\t', 'Confidence:', confidence)
+            for idx in index_no3_3:
+                upper = images_no3_3[idx, :, :112, :]
+                lower = images_no3_3[idx, :, 112:, :]
+                crop_list.append(upper)
+                crop_list.append(lower)
+            
+            images_012 = torch.stack(crop_list)
 
-                    confidence_store.append('{:.4f}'.format(confidence))
-                    class_idx_store.append('{}'.format(class_idx_1[idx]))
+            simpleres_012 = SimpleResNet152(num_class=3, checkpoint_path=res_cpath_2, resolution=(224, 224), device=torch.device(device))
+            idx_012, confidence_012 = simpleres_012.predict_batch(images_012)
 
-                
-                elif index % 2 == 1 and index in index_store:
+            print(idx_012)
+            print(confidence_012)
+
+            for index, _ in enumerate(p_copy):
+                if index % 2 == 1 and index not in index_store:
+                    confidence_store.append('{:.4f}'.format(confidence_no3_3[index//2]))
+                    class_idx_store.append('{}'.format(class_idx_1[idx_no3_3[index//2]]))
+
+                elif index % 2 ==1 and index in index_store:
                     confidence_store.append('Not Applicable')
                     class_idx_store.append('Not Applicable')
-                
+                        
             zip_list = list(zip(class_idx_store, confidence_store))
 
             print('\nDone\n')
@@ -502,9 +526,8 @@ def CallBackFunc(event, x, y, flags, param):
         cv2.imshow(windowName, resize_image)
 
 
-def main(ipath, hr_cpath, res_cpath, device):
+def main(ipath, hr_cpath, res_cpath_1, res_cpath_2, device):
     global windowName, image, height, width, clone, resize_image, src, dst, p, mv, p_original, mv_original, mSASSS
-
 
     mSASSS = {}
     
@@ -541,12 +564,13 @@ def main(ipath, hr_cpath, res_cpath, device):
         cv2.moveWindow(windowName, 500, 200)
 
         # Tkinter (GUI)
-        app(device, res_cpath)               
+        app(device, res_cpath_1, res_cpath_2)               
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ipath', '-ip', help='path to image folder', type=str,  default='datasets/COCO/default')
-    parser.add_argument('--res_cpath', '-rcp', help='path to resnet checkpoint', type=str,  default='logs/020223_104428/checkpoint_best_acc_0.8055555555555556.pth')
+    parser.add_argument('--res_cpath_1', '-rcp1', help='path to resnet checkpoint for no3, 3', type=str,  default='logs/3_No3/130423_100946/checkpoint_best_0.2344_0.8750.pth')
+    parser.add_argument('--res_cpath_2', '-rcp2', help='path to resnet checkpoint for 0, 1, 2', type=str,  default='logs/0_1_2/110423_150447/checkpoint_best_0.2873_0.9748.pth')
     parser.add_argument('--hr_cpath', '-hcp', help='path to hrnet checkpoint', type=str,  default='logs/20221220_1651/checkpoint_best_acc_0.9928728138145647.pth')
     parser.add_argument('--device', '-d', help='device', type=str, default='cpu')
     args = parser.parse_args()

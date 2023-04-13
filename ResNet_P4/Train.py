@@ -75,7 +75,6 @@ class Train():
 
         # Model
         self.model = ResNet152(in_channels=3, num_classes=num_classes).to(device)
-        # self.model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet152', pretrained=False).to(self.device)
 
         # Optimizer
         if optimizer == 'SGD':

@@ -4,12 +4,15 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
+
 from torchvision.models import resnet152
 from torchvision.transforms import transforms
 
 from misc.utils import get_final_preds
 
 from HRnet import HRNet
+from ResNet152 import ResNet152
 
 import sys
 
@@ -119,8 +122,7 @@ class SimpleResNet152:
             transforms.ToTensor()
         ])
 
-        self.model = resnet152(weights=None)
-        self.model.fc = nn.Linear(in_features=2048, out_features=self.num_class, bias=True)
+        self.model = ResNet152(num_classes=self.num_class)
 
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
 
@@ -148,37 +150,39 @@ class SimpleResNet152:
 
         self.model = self.model.to(self.device)
 
-        self.transform = transforms.Compose([
+        self.transform_single = transforms.Compose([
             transforms.ToTensor(),
             transforms.Resize((self.resolution[0], self.resolution[1]))
         ])
 
+        self.transform_batch = transforms.Resize((self.resolution[0], self.resolution[1]))
+
     def predict_single(self, image):
         
-        image = self.transform(image).to(self.device)
+        image = self.transform_single(image).to(self.device)
         
-        if len(image.shape) == 3:
-            image = image.unsqueeze(dim=0)
+        assert len(image.shape) == 3, 'It is not a single image since length of image\'s shape is not equal to 3'
 
-            self.model.eval()
-            output = self.model(image).softmax(dim=1)
-            idx = torch.argmax(output, dim=1)
-            confidence = output[0][idx].item()
-            
-            return idx, confidence
+        image = image.unsqueeze(dim=0)
+        self.model.eval()
+        output = self.model(image).softmax(dim=1)
+        idx = torch.argmax(output, dim=1)
+        confidence = output[0][idx].item()
+        
+        return idx, confidence
 
     def predict_batch(self, images):
 
-        images = self.transform(images).to(self.device)
+        images = self.transform_batch(images).to(self.device)
+
+        assert len(images.shape) == 4, 'It is not a single image since length of image\'s shape is not equal to 4'
 
         self.model.eval()
         output = self.model(images).softmax(dim=1)
         print(output)
+        confidence, idx = torch.max(output, dim=1)
+        return idx, confidence
         
-
-
-        
-
 
 if __name__ == '__main__':
     import torch
@@ -186,19 +190,38 @@ if __name__ == '__main__':
     import cv2
     import os
 
-    simplehrnet = SimpleHRNet(c=48, key=12, checkpoint_path='./logs/20221220_1651/checkpoint_best_loss_0.0010082135344610403.pth')
-    Instruction = True
+    # simplehrnet = SimpleHRNet(c=48, key=12, checkpoint_path='./logs/20221220_1651/checkpoint_best_loss_0.0010082135344610403.pth')
+    # Instruction = True
 
-    for image in os.listdir('./datasets/COCO/default'):
-        if Instruction == True:
-            image = cv2.imread(os.path.join('./datasets/COCO/default', image))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            out = simplehrnet.predict_single(image)
+    # for image in os.listdir('./datasets/COCO/default'):
+    #     if Instruction == True:
+    #         image = cv2.imread(os.path.join('./datasets/COCO/default', image))
+    #         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    #         out = simplehrnet.predict_single(image)
             
-            # Out: Batch, Points, XY
+    #         # Out: Batch, Points, XY
 
-            for pair in out[0][0]:
-                image = cv2.circle(image, (int(pair[0]), int(pair[1])), radius=5, color=(255, 255, 255), thickness=-1)
+    #         for pair in out[0][0]:
+    #             image = cv2.circle(image, (int(pair[0]), int(pair[1])), radius=5, color=(255, 255, 255), thickness=-1)
         
-            cv2.imshow('Image', cv2.resize(image, (1000, 1000)))
-            cv2.waitKey(1)
+    #         cv2.imshow('Image', cv2.resize(image, (1000, 1000)))
+    #         cv2.waitKey(1)
+
+    trans = transforms.Compose([
+        transforms.Resize((224,224))
+    ])
+
+    images = np.random.random((6, 175, 175, 3))
+    images = np.transpose(images, (0, 3, 1, 2))
+    
+    images = torch.tensor(images, dtype=torch.float32)
+    trans = transforms.Resize((224, 224))
+    images = trans(images)
+    print(images)
+    
+
+
+
+    model = SimpleResNet152(num_class=2, checkpoint_path='logs/020223_104428/checkpoint_best_acc_0.8055555555555556.pth')
+    output = model.predict_batch(images)
+    print(output.shape)
