@@ -37,7 +37,7 @@ def app(device, res_cpath_1, res_cpath_2):
     class_idx_store = []
 
     class_idx_1 = ['3', 'no 3']
-    class_idx_2 = ['']
+    class_idx_2 = ['0', '1', '2']
 
     while(True):
         cv2.setMouseCallback(windowName, CallBackFunc)
@@ -45,7 +45,8 @@ def app(device, res_cpath_1, res_cpath_2):
         
         key = cv2.waitKey(0)
         
-        # Bounding Box
+
+        ########################################################################## Bounding Box ##########################################################################
         if key == ord('b'):
             print('\nDisplay bounding boxes!\n')
             avg_len = abs(p[3] - p[5]).mean()
@@ -60,8 +61,8 @@ def app(device, res_cpath_1, res_cpath_2):
                     else:
                         continue
 
-        
-        # Classify
+
+        ########################################################################## Classify ##########################################################################
         elif key == ord('c'):
             print('\nClassifying!\n')
 
@@ -103,12 +104,14 @@ def app(device, res_cpath_1, res_cpath_2):
 
             simpleres_no3_3 = SimpleResNet152(num_class=2, checkpoint_path=res_cpath_1, resolution=(224, 224), device=torch.device(device))
             idx_no3_3, confidence_no3_3 = simpleres_no3_3.predict_batch(images_no3_3)
-            
-            index_no3_3 = torch.tensor((range(len((idx_no3_3 == 1)))))
-            
+            idx_no3 = torch.tensor((range(len((idx_no3_3 == 1)))))
+
+            idx_no3_3 = idx_no3_3.tolist()
+            confidence_no3_3 = confidence_no3_3.tolist()
+
             crop_list = []
 
-            for idx in index_no3_3:
+            for idx in idx_no3:
                 upper = images_no3_3[idx, :, :112, :]
                 lower = images_no3_3[idx, :, 112:, :]
                 crop_list.append(upper)
@@ -119,75 +122,272 @@ def app(device, res_cpath_1, res_cpath_2):
             simpleres_012 = SimpleResNet152(num_class=3, checkpoint_path=res_cpath_2, resolution=(224, 224), device=torch.device(device))
             idx_012, confidence_012 = simpleres_012.predict_batch(images_012)
 
-            print(idx_012)
-            print(confidence_012)
+            idx_012 = idx_012.tolist()
+            confidence_012 = confidence_012.tolist()
+
 
             for index, _ in enumerate(p_copy):
-                if index % 2 == 1 and index not in index_store:
-                    confidence_store.append('{:.4f}'.format(confidence_no3_3[index//2]))
-                    class_idx_store.append('{}'.format(class_idx_1[idx_no3_3[index//2]]))
+                if (index % 2 == 1) and (index not in index_store) and (idx_no3_3[0] == 0):
+                    # 3 for Upper and Lower
+                    confidence_store.append('{:.4f}'.format(confidence_no3_3[0]))
+                    confidence_store.append('{:.4f}'.format(confidence_no3_3.pop(0)))
+                    class_idx_store.append('{}'.format(class_idx_1[idx_no3_3[0]]))
+                    class_idx_store.append('{}'.format(class_idx_1[idx_no3_3.pop(0)]))
+
+                elif (index % 2 == 1) and (index not in index_store) and (idx_no3_3[0] == 1):
+                    # Remove for Non-3
+                    confidence_no3_3.pop(0)
+                    idx_no3_3.pop(0)
+
+                    # Upper
+                    confidence_store.append('{:.4f}'.format(confidence_012.pop(0)))
+                    class_idx_store.append('{}'.format(class_idx_2[idx_012.pop(0)]))
+
+                    # Lower
+                    confidence_store.append('{:.4f}'.format(confidence_012.pop(0)))
+                    class_idx_store.append('{}'.format(class_idx_2[idx_012.pop(0)]))                    
 
                 elif index % 2 ==1 and index in index_store:
                     confidence_store.append('Not Applicable')
+                    confidence_store.append('Not Applicable')                    
+                    class_idx_store.append('Not Applicable')
                     class_idx_store.append('Not Applicable')
                         
             zip_list = list(zip(class_idx_store, confidence_store))
 
             print('\nDone\n')
 
-        
+
+        ########################################################################## View and Save ##########################################################################
         elif key == ord('m'):
-            window = tk.Tk()
-            window.title('mSASSS Scores')
-            window.minsize(width=200, height=300)
-            window.grid_columnconfigure((0, 1, 2), weight=1)
 
-            tk.Label(master=window, text='Location').grid(row=0, column=0)
-            tk.Label(master=window, text='Point 2 Upper').grid(row=1, column=0)
-            tk.Label(master=window, text='Point 2 Lower').grid(row=2, column=0)
-            tk.Label(master=window, text='Point 4 Upper').grid(row=3, column=0)
-            tk.Label(master=window, text='Point 4 Lower').grid(row=4, column=0)
-            tk.Label(master=window, text='Point 6 Upper').grid(row=5, column=0)
-            tk.Label(master=window, text='Point 6 Lower').grid(row=6, column=0)
-            tk.Label(master=window, text='Point 8 Upper').grid(row=7, column=0)
-            tk.Label(master=window, text='Point 8 Lower').grid(row=8, column=0)
-            tk.Label(master=window, text='Point 10 Upper').grid(row=9, column=0)
-            tk.Label(master=window, text='Point 10 Lower').grid(row=10, column=0)
-            tk.Label(master=window, text='Point 12 Upper').grid(row=11, column=0) 
-            tk.Label(master=window, text='Point 12 Lower').grid(row=12, column=0)
+            if 'zip_list' not in locals():
+                print('Please run classification first!')
 
-            tk.Label(master=window, text='Class').grid(row=0, column=1)
-            tk.Label(master=window, text=zip_list[0][0]).grid(row=1, column=1)
-            tk.Label(master=window, text=zip_list[0][0]).grid(row=2, column=1)
-            tk.Label(master=window, text=zip_list[1][0]).grid(row=3, column=1)
-            tk.Label(master=window, text=zip_list[1][0]).grid(row=4, column=1)
-            tk.Label(master=window, text=zip_list[2][0]).grid(row=5, column=1)
-            tk.Label(master=window, text=zip_list[2][0]).grid(row=6, column=1)
-            tk.Label(master=window, text=zip_list[3][0]).grid(row=7, column=1)
-            tk.Label(master=window, text=zip_list[3][0]).grid(row=8, column=1)
-            tk.Label(master=window, text=zip_list[4][0]).grid(row=9, column=1)
-            tk.Label(master=window, text=zip_list[4][0]).grid(row=10, column=1)
-            tk.Label(master=window, text=zip_list[5][0]).grid(row=11, column=1) 
-            tk.Label(master=window, text=zip_list[5][0]).grid(row=12, column=1)
+            elif 'zip_list' in locals():
+                window = tk.Tk()
+                window.title('mSASSS Scores')
+                window.minsize(width=200, height=300)
+                window.grid_columnconfigure((0, 1, 2), weight=1)
 
-            tk.Label(master=window, text='Confidence').grid(row=0, column=2)
-            tk.Label(master=window, text=zip_list[0][1]).grid(row=1, column=2)
-            tk.Label(master=window, text=zip_list[0][1]).grid(row=2, column=2)
-            tk.Label(master=window, text=zip_list[1][1]).grid(row=3, column=2)
-            tk.Label(master=window, text=zip_list[1][1]).grid(row=4, column=2)
-            tk.Label(master=window, text=zip_list[2][1]).grid(row=5, column=2)
-            tk.Label(master=window, text=zip_list[2][1]).grid(row=6, column=2)
-            tk.Label(master=window, text=zip_list[3][1]).grid(row=7, column=2)
-            tk.Label(master=window, text=zip_list[3][1]).grid(row=8, column=2)
-            tk.Label(master=window, text=zip_list[4][1]).grid(row=9, column=2)
-            tk.Label(master=window, text=zip_list[4][1]).grid(row=10, column=2)
-            tk.Label(master=window, text=zip_list[5][1]).grid(row=11, column=2) 
-            tk.Label(master=window, text=zip_list[5][1]).grid(row=12, column=2)
+                # Location
+                tk.Label(master=window, text='Location').grid(row=0, column=0)
+                tk.Label(master=window, text='Point 2 Upper').grid(row=1, column=0)
+                tk.Label(master=window, text='Point 2 Lower').grid(row=2, column=0)
+                tk.Label(master=window, text='Point 4 Upper').grid(row=3, column=0)
+                tk.Label(master=window, text='Point 4 Lower').grid(row=4, column=0)
+                tk.Label(master=window, text='Point 6 Upper').grid(row=5, column=0)
+                tk.Label(master=window, text='Point 6 Lower').grid(row=6, column=0)
+                tk.Label(master=window, text='Point 8 Upper').grid(row=7, column=0)
+                tk.Label(master=window, text='Point 8 Lower').grid(row=8, column=0)
+                tk.Label(master=window, text='Point 10 Upper').grid(row=9, column=0)
+                tk.Label(master=window, text='Point 10 Lower').grid(row=10, column=0)
+                tk.Label(master=window, text='Point 12 Upper').grid(row=11, column=0) 
+                tk.Label(master=window, text='Point 12 Lower').grid(row=12, column=0)
 
-            window.mainloop()
+                # Class
+                tk.Label(master=window, text='Class').grid(row=0, column=1)
+                
+                entry_1 = tk.Entry(master=window)
+                entry_1.insert(0, zip_list[0][0])
+                entry_1.grid(row=1, column=1)
+
+                entry_2 = tk.Entry(master=window)
+                entry_2.insert(0, zip_list[1][0])
+                entry_2.grid(row=2, column=1)
+
+                entry_3 = tk.Entry(master=window)
+                entry_3.insert(0, zip_list[2][0])
+                entry_3.grid(row=3, column=1)
+
+                entry_4 = tk.Entry(master=window)
+                entry_4.insert(0, zip_list[3][0])
+                entry_4.grid(row=4, column=1)
+
+                entry_5 = tk.Entry(master=window)
+                entry_5.insert(0, zip_list[4][0])
+                entry_5.grid(row=5, column=1)
+
+                entry_6 = tk.Entry(master=window)
+                entry_6.insert(0, zip_list[5][0])
+                entry_6.grid(row=6, column=1)
+
+                entry_7 = tk.Entry(master=window)
+                entry_7.insert(0, zip_list[6][0])
+                entry_7.grid(row=7, column=1)
+
+                entry_8 = tk.Entry(master=window)
+                entry_8.insert(0, zip_list[7][0])
+                entry_8.grid(row=8, column=1)
+
+                entry_9 = tk.Entry(master=window)
+                entry_9.insert(0, zip_list[8][0])
+                entry_9.grid(row=9, column=1)
+
+                entry_10 = tk.Entry(master=window)
+                entry_10.insert(0, zip_list[9][0])
+                entry_10.grid(row=10, column=1)
+
+                entry_11 = tk.Entry(master=window)
+                entry_11.insert(0, zip_list[10][0])
+                entry_11.grid(row=11, column=1)
+
+                entry_12 = tk.Entry(master=window)
+                entry_12.insert(0, zip_list[11][0])
+                entry_12.grid(row=12, column=1)
+
+                # Confidence
+                tk.Label(master=window, text='Confidence').grid(row=0, column=2)
+                tk.Label(master=window, text=zip_list[0][1]).grid(row=1, column=2)
+                tk.Label(master=window, text=zip_list[1][1]).grid(row=2, column=2)
+                tk.Label(master=window, text=zip_list[2][1]).grid(row=3, column=2)
+                tk.Label(master=window, text=zip_list[3][1]).grid(row=4, column=2)
+                tk.Label(master=window, text=zip_list[4][1]).grid(row=5, column=2)
+                tk.Label(master=window, text=zip_list[5][1]).grid(row=6, column=2)
+                tk.Label(master=window, text=zip_list[6][1]).grid(row=7, column=2)
+                tk.Label(master=window, text=zip_list[7][1]).grid(row=8, column=2)
+                tk.Label(master=window, text=zip_list[8][1]).grid(row=9, column=2)
+                tk.Label(master=window, text=zip_list[9][1]).grid(row=10, column=2)
+                tk.Label(master=window, text=zip_list[10][1]).grid(row=11, column=2) 
+                tk.Label(master=window, text=zip_list[11][1]).grid(row=12, column=2)
+
+                # Saving Edited Class Files
+                def record():
+            
+                    class_idx_store_new = []
+                    class_idx_store_new.append(entry_1.get())
+                    class_idx_store_new.append(entry_2.get())
+                    class_idx_store_new.append(entry_3.get())
+                    class_idx_store_new.append(entry_4.get())
+                    class_idx_store_new.append(entry_5.get())
+                    class_idx_store_new.append(entry_6.get())
+                    class_idx_store_new.append(entry_7.get())
+                    class_idx_store_new.append(entry_8.get())
+                    class_idx_store_new.append(entry_9.get())
+                    class_idx_store_new.append(entry_10.get())
+                    class_idx_store_new.append(entry_11.get())
+                    class_idx_store_new.append(entry_12.get())
+
+                    if class_idx_store_new != class_idx_store:
+                        
+                        # Check Annotation Path Exist
+                        if os.path.exists('Train_Case/datasets'):
+                            pass
+                        else:
+                            os.makedirs('Train_Case/datasets/1/3')
+                            os.makedirs('Train_Case/datasets/1/no_3')
+                            os.makedirs('Train_Case/datasets/2/0')
+                            os.makedirs('Train_Case/datasets/2/1')
+                            os.makedirs('Train_Case/datasets/2/2')
+
+                        # Create Count
+                        last_count_3 = len(os.listdir('Train_Case/datasets/1/3'))
+                        last_count_no3 = len(os.listdir('Train_Case/datasets/1/no_3'))
+                        last_count_0 = len(os.listdir('Train_Case/datasets/2/0'))
+                        last_count_1 = len(os.listdir('Train_Case/datasets/2/1'))
+                        last_count_2 = len(os.listdir('Train_Case/datasets/2/2'))
+
+                        new_count_3 = last_count_3 + 1
+                        new_count_no3 = last_count_no3 + 1
+                        new_count_0 = last_count_0 + 1
+                        new_count_1 = last_count_1 + 1
+                        new_count_2 = last_count_2 + 1
+
+                        idx_changes = ((np.array(class_idx_store_new) == np.array(class_idx_store)) == False).nonzero()[0]
+                        
+                        # First Check for score 3
+                        for index, idx in enumerate(idx_changes):
+                            class_change = class_idx_store_new[idx]
+
+                            if (class_change == '3') and (idx % 2 == 0):
+                                assert idx_changes.shape[0] > 1, 'Should have 2 changes for mSASSS score 3'
+                                assert idx_changes[index] + 1 == idx_changes[index + 1], 'Problem 1: Please ensure that both upper and lower border are of mSASSS score 3'
+                                assert class_idx_store_new[idx_changes[index + 1]] == '3', 'Problem 2: Please ensure that both upper and lower border are of mSASSS score 3'
+
+                            elif (class_change == '3') and (idx % 2 == 1):
+                                assert idx_changes.shape[0] > 1, 'Should have 2 changes for mSASSS score 3'
+                                assert idx_changes[index] - 1 == idx_changes[index - 1], 'Problem 1: Please ensure that both upper and lower border are of mSASSS score 3'
+                                assert class_idx_store_new[idx_changes[index - 1]] == '3', 'Please ensure that both upper and lower border are of mSASSS score 3'
+                            
+                        # Save
+                        for index, idx in enumerate(idx_changes):
+
+                            class_change = class_idx_store_new[idx]
+
+                            # 3
+                            if (class_change == '3') and (idx % 2 == 0):        
+                                image_save = images_no3_3[idx // 2]
+                                cv2.imwrite('Train_Case/datasets/1/3/{}.png'.format(new_count_3), image_save.numpy().transpose(1, 2, 0) * 255)
+                                new_count_3 += 1
+
+                            # 2
+                            elif (class_change == '2'):
+
+                                image_save = images_no3_3[idx // 2]
+                                
+                                # Save a copy of no_3
+                                if (class_idx_store[idx] == '3') and (idx % 2) == 0:
+                                    cv2.imwrite('Train_Case/datasets/1/no_3/{}.png'.format(new_count_no3), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_no3 += 1
+                                
+                                if idx % 2 == 0:
+                                    image_save = image_save[:, :112, :]
+                                    cv2.imwrite('Train_Case/datasets/2/2/{}.png'.format(new_count_2), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_2 += 1
+                                
+                                elif idx % 2 == 1:
+                                    image_save = image_save[:, 112:, :]
+                                    cv2.imwrite('Train_Case/datasets/2/2/{}.png'.format(new_count_2), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_2 += 1
+                            
+                            # 1
+                            elif (class_change == '1'):
+
+                                image_save = images_no3_3[idx // 2]
+                                
+                                # Save a copy of no_3
+                                if (class_idx_store[idx] == '3') and (idx % 2) == 0:
+                                    cv2.imwrite('Train_Case/datasets/1/no_3/{}.png'.format(new_count_no3), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_no3 += 1
+                                
+                                if idx % 2 == 0:
+                                    image_save = image_save[:, :112, :]
+                                    cv2.imwrite('Train_Case/datasets/2/1/{}.png'.format(new_count_1), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_1 += 1
+                                
+                                elif idx % 2 == 1:
+                                    image_save = image_save[:, 112:, :]
+                                    cv2.imwrite('Train_Case/datasets/2/1/{}.png'.format(new_count_1), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_1 += 1
+                            
+                            # 0
+                            elif (class_change == '0'):
+                                
+                                image_save = images_no3_3[idx // 2]
+                                
+                                # Save a copy of no_3
+                                if (class_idx_store[idx] == '3') and (idx % 2) == 0:
+                                    cv2.imwrite('Train_Case/datasets/1/no_3/{}.png'.format(new_count_no3), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_no3 += 1
+                                
+                                if idx % 2 == 0:
+                                    image_save = image_save[:, :112, :]
+                                    cv2.imwrite('Train_Case/datasets/2/0/{}.png'.format(new_count_0), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_0 += 1
+                                
+                                elif idx % 2 == 1:
+                                    image_save = image_save[:, 112:, :]
+                                    cv2.imwrite('Train_Case/datasets/2/0/{}.png'.format(new_count_0), image_save.numpy().transpose(1, 2, 0) * 255)
+                                    new_count_0 += 1
+                            
+                    return window.destroy()
+                
+                tk.Button(master=window, text="Submit", command=record).grid(row=13, columnspan=2)
+
+                window.mainloop()
 
 
-        # Plot Original Points
+        ########################################################################## Plot Original Points ##########################################################################
         elif key == ord('o'):
             print('\nPlot original points!\n')
             index_store = []
@@ -199,7 +399,7 @@ def app(device, res_cpath_1, res_cpath_2):
                 resize_image = cv2.putText(resize_image, text=str(index+1), org=(int(pair[0] + 20), int(pair[1])), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1., color=(255, 255, 255))
         
         
-        # Plot Points
+        ########################################################################## Plot Points ##########################################################################
         elif key == ord('p'):
             print('\nPlot points!\n')
             for index, pair in enumerate(p):
@@ -210,19 +410,19 @@ def app(device, res_cpath_1, res_cpath_2):
                     resize_image = cv2.putText(resize_image, text=str(index+1), org=(int(pair[0] + 20), int(pair[1])), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1., color=(255, 255, 255))
 
 
-        # Close
+        ########################################################################## Next/Close ##########################################################################
         elif key == ord('q'):
             print('\nQuiting!\n')
             break
 
 
-        # Remove Points
+        ########################################################################## Remove Points ##########################################################################
         elif key == ord('r'):
             print('\nRemove points!\n')
             resize_image = clone.copy()
 
 
-        # Save
+        ########################################################################## Save Keypoints Annotations ##########################################################################
         elif key == ord('s'):
             print('\nSaving!\n')
             
@@ -381,7 +581,7 @@ def app(device, res_cpath_1, res_cpath_2):
                 json.dump(j, f)
 
 
-        # Select Visibility
+        ########################################################################## Visibility ##########################################################################
         elif key == ord('v'):
             print('\nVisibility\n')
             window = tk.Tk()
@@ -471,7 +671,7 @@ def app(device, res_cpath_1, res_cpath_2):
 
     print('\nNot visible points\n', [x+1 for x in index_store])
 
-# Callback function
+########################################################################## Mouse Callback Functions ##########################################################################
 def CallBackFunc(event, x, y, flags, param):
     global row, p, resize_image
 
@@ -571,8 +771,8 @@ if __name__ == "__main__":
     parser.add_argument('--ipath', '-ip', help='path to image folder', type=str,  default='datasets/COCO/default')
     parser.add_argument('--res_cpath_1', '-rcp1', help='path to resnet checkpoint for no3, 3', type=str,  default='logs/3_No3/130423_100946/checkpoint_best_0.2344_0.8750.pth')
     parser.add_argument('--res_cpath_2', '-rcp2', help='path to resnet checkpoint for 0, 1, 2', type=str,  default='logs/0_1_2/110423_150447/checkpoint_best_0.2873_0.9748.pth')
-    parser.add_argument('--hr_cpath', '-hcp', help='path to hrnet checkpoint', type=str,  default='logs/20221220_1651/checkpoint_best_acc_0.9928728138145647.pth')
-    parser.add_argument('--device', '-d', help='device', type=str, default='cpu')
+    parser.add_argument('--hr_cpath', '-hcp', help='path to hrnet checkpoint', type=str,  default='logs/kp/checkpoint_best_acc_0.9448882749206141.pth')
+    parser.add_argument('--device', '-d', help='device', type=str, default='cuda:0')
     args = parser.parse_args()
 
     main(**args.__dict__)

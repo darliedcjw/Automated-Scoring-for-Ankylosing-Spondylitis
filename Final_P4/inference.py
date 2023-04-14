@@ -168,8 +168,9 @@ class SimpleResNet152:
         output = self.model(image).softmax(dim=1)
         idx = torch.argmax(output, dim=1)
         confidence = output[0][idx].item()
+        certainty = (confidence - (1/self.num_class)) / (1/self.num_class)
         
-        return idx, confidence
+        return idx, certainty
 
     def predict_batch(self, images):
 
@@ -179,9 +180,10 @@ class SimpleResNet152:
 
         self.model.eval()
         output = self.model(images).softmax(dim=1)
-        print(output)
         confidence, idx = torch.max(output, dim=1)
-        return idx, confidence
+        certainty = (confidence - (1/self.num_class)) / (1/self.num_class)
+        
+        return idx, certainty
         
 
 if __name__ == '__main__':
