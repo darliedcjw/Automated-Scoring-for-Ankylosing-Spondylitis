@@ -768,10 +768,10 @@ def main(ipath, hr_cpath, res_cpath_1, res_cpath_2, device):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ipath', '-ip', help='path to image folder', type=str,  default='datasets/COCO/default')
+    parser.add_argument('--ipath', '-ip', help='path to image folder', type=str,  default='datasets/COCO/Test')
     parser.add_argument('--res_cpath_1', '-rcp1', help='path to resnet checkpoint for no3, 3', type=str,  default='logs/3_No3/130423_100946/checkpoint_best_0.2344_0.8750.pth')
     parser.add_argument('--res_cpath_2', '-rcp2', help='path to resnet checkpoint for 0, 1, 2', type=str,  default='logs/0_1_2/110423_150447/checkpoint_best_0.2873_0.9748.pth')
-    parser.add_argument('--hr_cpath', '-hcp', help='path to hrnet checkpoint', type=str,  default='logs/kp/checkpoint_best_acc_0.9448882749206141.pth')
+    parser.add_argument('--hr_cpath', '-hcp', help='path to hrnet checkpoint', type=str,  default='logs/kp/checkpoint_best_acc_0.9928728138145647.pth')
     parser.add_argument('--device', '-d', help='device', type=str, default='cuda:0')
     args = parser.parse_args()
 
