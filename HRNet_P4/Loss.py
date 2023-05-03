@@ -6,7 +6,7 @@ from misc.utils import compute_distance
 class JointsMSELoss(nn.Module):
     def __init__(self, use_target_weight=True, use_point_dist=True):
         """
-        MSE loss between output and GT points
+        MSE loss between output and GT MAPS
         Args:
             use_target_weight (bool): use target weight.
                 WARNING! This should be always true, otherwise the loss will sum the error for non-visible joints too.
@@ -16,7 +16,7 @@ class JointsMSELoss(nn.Module):
         self.use_target_weight = use_target_weight
         self.use_point_dist = use_point_dist
 
-    def forward(self, output, target, target_distance, points_vis, points_scale, device, target_weight=None):
+    def forward(self, output, target, target_distance, points_vis, target_weight=None, device='cpu'):
         # Include Points_dis
         # Output: Batch, Points, Y, X
         batch_size = output.shape[0]
@@ -29,7 +29,7 @@ class JointsMSELoss(nn.Module):
             if target_weight is None:
                 raise NameError
 
-            output_distance = compute_distance(output, points_vis, points_scale).to(device) # Work within compute distance
+            output_distance = compute_distance(output, points_vis).to(device) # Work within compute distance
 
             for idx in range(num_points):
                 heatmap_pred = heatmaps_pred[idx].squeeze() # Flatten last 2 dimensions

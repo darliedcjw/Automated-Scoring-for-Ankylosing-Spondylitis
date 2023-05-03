@@ -163,7 +163,6 @@ class Train():
             target_weight = target_weight.to(self.device)
             points_distance = points_data['points_distance'].to(self.device)
             points_vis = points_data['points_visibility'].to(self.device)
-            points_scale = points_data['scale'].to(self.device)
             
              ### Define everything here first
 
@@ -172,7 +171,7 @@ class Train():
             output = self.model(image) # Tensors
 
             # Loss for each batch
-            loss = self.loss_fn(output, target, points_distance, points_vis, points_scale, self.device, target_weight)
+            loss = self.loss_fn(output, target, points_distance, points_vis, target_weight, self.device)
 
             loss.backward()
 
@@ -180,7 +179,7 @@ class Train():
 
             # Evaluate accuracy
             # Get predictions on the input
-            accs, avg_acc, cnt, points_preds, points_target = self.ds_train.evaluate_accuracy(output, target)
+            _, avg_acc, _, points_preds, points_target = self.ds_train.evaluate_accuracy(output, target, target_weight)
 
             self.mean_loss_train += loss.item()
             self.mean_acc_train += avg_acc.item()
@@ -296,103 +295,3 @@ class Train():
             self.summary_writer.close()
             
         print('\nTraining ended @ %s' % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-if __name__ == '__main__':
-    from datasets import COCODataset
-    import ast
-
-    # coco_root_path = './datasets/COCO'
-    # image_resolution = '(256, 192)'
-    # image_resolution = ast.literal_eval(image_resolution)
-    # ds_train = COCODataset(root_path=coco_root_path, data_version='default', is_train=True, image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True)
-    # ds_load = DataLoader(ds_train, batch_size=1)
-    # for index, train in enumerate(ds_load):
-    #     print(train[-1]['points_distance'].shape) # Batch, 6, 2
-    #     print(train[-1]['scale'][0])
-    #     print(type(train[-1]['points_visibility'][1,1,0]))
-    #     break
-
-
-    def main(exp_name='Test',
-         epochs=210,
-         batch_size=4,
-         num_workers=2,
-         lr=0.001,
-         disable_lr_decay=False,
-         lr_decay_steps='(170, 200)',
-         lr_decay_gamma=0.1,
-         optimizer='Adam',
-         weight_decay=0.,
-         momentum=0.9,
-         nesterov=False,
-         pretrained_weight_path=None,
-         log_path='./logs',
-         disable_tensorboard_log=False,
-         model_c=32,
-         model_key=12,
-         model_bn_momentum=0.1,
-         image_resolution='(256, 192)',
-         coco_root_path="./datasets/COCO",
-         device=None):
-
-        if device is not None:
-            device = torch.device(device)
-        else:
-            if torch.cuda.is_available():
-                device = torch.device('cuda:0')
-            else:
-                device = torch.device('cpu')
-
-        print(device)
-
-        print("\nStarting experiment `%s` @ %s\n" % (exp_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-
-        lr_decay = not disable_lr_decay
-        use_tensorboard = not disable_tensorboard_log
-        image_resolution = ast.literal_eval(image_resolution)
-        lr_decay_steps = ast.literal_eval(lr_decay_steps)
-
-        print("\nLoading train and validation datasets...")
-
-        # load train and val datasets
-        ds_train = COCODataset(
-            root_path=coco_root_path, data_version="default", is_train=True,
-            image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True,
-        )
-        print('Training Size: {}'.format(ds_train.__len__()))
-
-        ds_val = COCODataset(
-            root_path=coco_root_path, data_version="default", is_train=False,
-            image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True,
-        )
-        print('Validation Size: {}'.format(ds_val.__len__()))
-
-        train = Train(
-            exp_name=exp_name,
-            ds_train=ds_train,
-            ds_val=ds_val,
-            epochs=epochs,
-            batch_size=batch_size,
-            num_workers=num_workers,
-            loss='JointsMSELoss',
-            use_dist=True,
-            lr=lr,
-            lr_decay=lr_decay,
-            lr_decay_steps=lr_decay_steps,
-            lr_decay_gamma=lr_decay_gamma,
-            optimizer=optimizer,
-            weight_decay=weight_decay,
-            momentum=momentum,
-            nesterov=nesterov,
-            pretrained_weight_path=pretrained_weight_path,
-            log_path=log_path,
-            use_tensorboard=use_tensorboard,
-            model_c=model_c,
-            model_key=model_key,
-            model_bn_momentum=model_bn_momentum,
-            device=device
-        )
-
-        train._train()
-
-    main()

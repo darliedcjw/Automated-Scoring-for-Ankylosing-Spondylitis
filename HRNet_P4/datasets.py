@@ -200,7 +200,7 @@ class COCODataset():
 
 
         '''
-        Distance between points for computing loss
+        Distance between points for computing loss (Scaled By Original Width and Height)
         '''
         points_distance = np.zeros((self.keys // 2, 2), dtype=np.float32)
         
@@ -262,13 +262,13 @@ class COCODataset():
         return image, target.astype(np.float32), target_weight.astype(np.float32), points_data
 
     
-    def evaluate_accuracy(self, output, target, params=None):
+    def evaluate_accuracy(self, output, target, target_weight, params=None):
         if params is not None:
             hm_type = params['hm_type']
             thr = params['thr']
-            accs, avg_acc, cnt, joints_preds, joints_target = evaluate_pck_accuracy(output, target, hm_type, thr)
+            accs, avg_acc, cnt, joints_preds, joints_target = evaluate_pck_accuracy(output, target, target_weight, hm_type, thr)
         else:
-            accs, avg_acc, cnt, joints_preds, joints_target = evaluate_pck_accuracy(output, target, hm_type='gaussian', thr=0.03)
+            accs, avg_acc, cnt, joints_preds, joints_target = evaluate_pck_accuracy(output, target, target_weight, hm_type='gaussian', thr=1.4)
 
         return accs, avg_acc, cnt, joints_preds, joints_target
 
