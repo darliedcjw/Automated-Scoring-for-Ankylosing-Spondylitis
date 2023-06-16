@@ -127,11 +127,11 @@ class Train():
         print('Transformation done for {} keypoints'.format(self.model_key))
 
         # Train Loader
-        self.dl_train = DataLoader(self.ds_train, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, drop_last=False)
+        self.dl_train = DataLoader(self.ds_train, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
         self.len_dl_train = len(self.dl_train)
 
         # Val Loader
-        self.dl_val = DataLoader(self.ds_val, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, drop_last=False)
+        self.dl_val = DataLoader(self.ds_val, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
         self.len_dl_val = len(self.dl_val)
 
         # initialize variables
@@ -159,7 +159,6 @@ class Train():
             target_weight = target_weight.to(self.device)
             points_distance = points_data['points_distance'].to(self.device)
             points_vis = points_data['points_visibility'].to(self.device)
-            points_scale = points_data['scale'].to(self.device)
             
              ### Define everything here first
 
@@ -168,7 +167,7 @@ class Train():
             output = self.model(image) # Tensors
 
             # Loss for each batch
-            loss = self.loss_fn(output, target, points_distance, points_vis, points_scale, self.device, target_weight)
+            loss = self.loss_fn(output, target, points_distance, points_vis, target_weight, self.device)
 
             loss.backward()
 
@@ -176,7 +175,7 @@ class Train():
 
             # Evaluate accuracy
             # Get predictions on the input
-            accs, avg_acc, cnt, points_preds, points_target = self.ds_train.evaluate_accuracy(output, target)
+            _, avg_acc, _, points_preds, points_target = self.ds_train.evaluate_accuracy(output, target, target_weight)
 
             self.mean_loss_train += loss.item()
             self.mean_acc_train += avg_acc.item()
@@ -208,14 +207,13 @@ class Train():
                 target_weight = target_weight.to(self.device)
                 points_distance = points_data['points_distance'].to(self.device)
                 points_vis = points_data['points_visibility'].to(self.device)
-                points_scale = points_data['scale'].to(self.device)
 
                 output = self.model(image)
 
-                loss = self.loss_fn(output, target, points_distance, points_vis, points_scale, self.device, target_weight)
+                loss = self.loss_fn(output, target, points_distance, points_vis, target_weight, self.device)
 
                 _, avg_acc, _, points_preds, points_target = \
-                    self.ds_val.evaluate_accuracy(output, target)
+                    self.ds_val.evaluate_accuracy(output, target, target_weight)
 
                 self.mean_loss_val += loss.item()
                 self.mean_acc_val += avg_acc.item()

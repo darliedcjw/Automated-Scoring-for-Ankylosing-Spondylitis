@@ -59,7 +59,7 @@ def main(exp_name,
 
     # load train and val datasets
     ds_train = COCODataset(
-        root_path=coco_root_path, data_version="default", keys=model_key, use_dist=use_dist, is_train=True, is_rotate=False, is_flip=False, is_scale=False, image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True)
+        root_path=coco_root_path, data_version="default", keys=model_key, use_dist=use_dist, is_train=True, is_rotate=True, is_flip=True, is_scale=True, image_width=image_resolution[1], image_height=image_resolution[0], color_rgb=True)
     print('Training Size: {}'.format(ds_train.__len__()))
 
     ds_val = COCODataset(

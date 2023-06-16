@@ -8,48 +8,49 @@ import kornia as K
 Transformation
 scale: width, height
 '''
-def get_resize_AF(original_size, output_size, train=False):
+# def get_resize_AF(original_size, output_size, train=False):
+def get_resize_AF(original_size, output_size):
 
-    if train:
-        src = torch.zeros((4,2), dtype=torch.float32)
-        dst = torch.zeros((4,2), dtype=torch.float32)
+    # if train:
+    #     src = torch.zeros((4,2), dtype=torch.float32)
+    #     dst = torch.zeros((4,2), dtype=torch.float32)
 
-        src[1, :] = [original_size[0], 0]
-        src[2, :] = [0, original_size[1]]
-        src[3, :] = [original_size[0], original_size[1]]
+    #     src[1, :] = [original_size[0], 0]
+    #     src[2, :] = [0, original_size[1]]
+    #     src[3, :] = [original_size[0], original_size[1]]
 
-        dst[1, :] = [output_size[0], 0]
-        dst[2, :] = [0, output_size[1]]
-        dst[3, :] = [output_size[0], output_size[1]]
+    #     dst[1, :] = [output_size[0], 0]
+    #     dst[2, :] = [0, output_size[1]]
+    #     dst[3, :] = [output_size[0], output_size[1]]
 
-        return K.geometry.get_perspective_transform(src, dst)
+    #     return K.geometry.get_perspective_transform(src, dst)
 
-    else:
-        src = np.zeros((3,2), dtype=np.float32)
-        dst = np.zeros((3,2), dtype=np.float32)
+    # else:
+    src = np.zeros((3,2), dtype=np.float32)
+    dst = np.zeros((3,2), dtype=np.float32)
 
-        src[1, :] = [original_size[0], 0]
-        src[2, :] = [0, original_size[1]]
+    src[1, :] = [original_size[0], 0]
+    src[2, :] = [0, original_size[1]]
 
-        dst[1, :] = [output_size[0], 0]
-        dst[2, :] = [0, output_size[1]]
+    dst[1, :] = [output_size[0], 0]
+    dst[2, :] = [0, output_size[1]]
 
-        return cv2.getAffineTransform(src, dst)
+    return cv2.getAffineTransform(src, dst)
 
 
-def affine_transform(pt, t, train=False):
+# def affine_transform(pt, t, train=False):
+def affine_transform(pt, t):
     '''
     pt has x, y coordinates and t is the transformation matrix
     '''
+    # # if train:
+    # #     new_pt = torch.tensor([pt[0], pt[1], 1.].T)
+    # #     new_pt = torch.dot(t, new_pt)
 
-    if train:
-        new_pt = torch.tensor([pt[0], pt[1], 1.].T)
-        new_pt = torch.dot(t, new_pt)
+    # else:
+    new_pt = np.array([pt[0], pt[1], 1.]).T
+    new_pt = np.dot(t, new_pt)
 
-    else:
-        new_pt = np.array([pt[0], pt[1], 1.]).T
-        new_pt = np.dot(t, new_pt)
-    
     return new_pt[:2]
 
 
@@ -69,24 +70,25 @@ def get_angle(pt1, pt2):
 '''
 Evaluation
 '''
-def evaluate_pck_accuracy(output, target, hm_type='gaussian', thr=0.03):
+def evaluate_pck_accuracy(output, target, target_weight, hm_type='gaussian', thr=1.4):
     """
-    Calculate accuracy according to PCK,
-    but uses ground truth heatmap rather than y,x locations
+    Uses ground truth heatmap rather than y,x locations
     First value to be returned is average accuracy across 'idxs',
     followed by individual accuracies
     """
     idx = list(range(output.shape[1]))
     if hm_type == 'gaussian':
         pred, _ = get_max_preds(output) # (Batch, 12, 2) where 2: Column and Row Number (Confined within 64, 48)
-        target, _ = get_max_preds(target) # Column and Row Number (Confined within 64, 48)
+        target, _ = get_max_preds(target) # (Batch, 12, 2) where 2: Column and Row Number (Confined within 64, 48)
         h = output.shape[2]
         w = output.shape[3]
-        norm = torch.ones((pred.shape[0], 2)) * torch.tensor([w, h], dtype=torch.float32)
-        norm = norm.to(output.device)
+        # norm = torch.ones((pred.shape[0], 2)) * torch.tensor([w, h], dtype=torch.float32)
+        # norm = norm.to(output.device)
     else:
         raise NotImplementedError
-    dists = calc_dists(pred, target, norm) # (17 by Batch) where value = Norm
+    
+    # dists = calc_dists(pred, target, norm) # (12 by Batch) where value = Norm
+    dists = calc_dists(pred, target, target_weight) # (12 by Batch) where value = Norm
 
     acc = torch.zeros(len(idx)).to(dists.device)
     avg_acc = 0
@@ -115,7 +117,7 @@ def get_max_preds(batch_heatmaps):
     num_joints = batch_heatmaps.shape[1]
     width = batch_heatmaps.shape[3]
     heatmaps_reshaped = batch_heatmaps.reshape(batch_size, num_joints, -1)
-    maxvals, idx = torch.max(heatmaps_reshaped, dim=2) # Output: (Batch, 17)
+    maxvals, idx = torch.max(heatmaps_reshaped, dim=2) # Output: (Batch, 12)
 
     maxvals = maxvals.unsqueeze(dim=-1) # Add 1 more dimension at the end
     idx = idx.float()
@@ -131,18 +133,19 @@ def get_max_preds(batch_heatmaps):
     return preds, maxvals
 
 
-def calc_dists(preds, target, normalize):
+# def calc_dists(preds, target, normalize):
+def calc_dists(preds, target, target_weight):
     preds = preds.type(torch.float32)
     target = target.type(torch.float32)
-    dists = torch.zeros((preds.shape[1], preds.shape[0])).to(preds.device)
+    dists = torch.zeros((preds.shape[1], preds.shape[0])).to(preds.device) # 12 by batch
     for n in range(preds.shape[0]):
         for c in range(preds.shape[1]):
-            if target[n, c, 0] > 1 and target[n, c, 1] > 1: # Check that target has visible points
+            if target_weight[n, c] > 0: # Check that target has visible points
                 
-                normed_preds = preds[n, c, :] / normalize[n]
-                normed_targets = target[n, c, :] / normalize[n]
+                # normed_preds = preds[n, c, :] / normalize[n]
+                # normed_targets = target[n, c, :] / normalize[n]
             
-                dists[c, n] = torch.linalg.norm(normed_preds - normed_targets) # Square of Sum of Square
+                dists[c, n] = torch.linalg.norm(preds - target) # Square of Sum of Square
 
                 # dists[c, n]
             else:
@@ -150,9 +153,9 @@ def calc_dists(preds, target, normalize):
     return dists
  
 
-def dist_acc(dists, thr=0.03):
+def dist_acc(dists, thr=1.4):
     """
-    1 Pixel difference in x, 1 pixel difference in y result in threshold 0.026
+    1 Pixel difference in x, 1 pixel difference in y result in threshold 1.41
     Return percentage below threshold while ignoring values with a -1
     dist: Scores of Joint Idx, c
     """
@@ -167,6 +170,7 @@ def dist_acc(dists, thr=0.03):
 '''
 Inference Methods
 '''
+# def get_final_preds(batch_heatmaps, scale, train=False):
 def get_final_preds(batch_heatmaps, scale, train=False):
     '''
     Scale: Original_Width, Orignal Height
@@ -191,15 +195,15 @@ def get_final_preds(batch_heatmaps, scale, train=False):
                     
                     coords[b][p] += torch.sign(diff) * .25
 
-        #Single batch: scale is 2 dimensional
-        if coords.shape[0] == 1:
-            for b in range(coords.shape[0]):
-                coords[b] = transform_preds(
-                    coords=coords[b],
-                    original_size=scale[b],
-                    output_size=[w, h],
-                    train=train
-                )
+        # #Single batch: scale is 2 dimensional
+        # if coords.shape[0] == 1:
+        #     for b in range(coords.shape[0]):
+        #         coords[b] = transform_preds(
+        #             coords=coords[b],
+        #             original_size=scale[b],
+        #             output_size=[w, h],
+        #             train=train
+        #         )
 
     else:
         maxvals = maxvals.detach().cpu().numpy()
@@ -226,28 +230,29 @@ def get_final_preds(batch_heatmaps, scale, train=False):
     return coords, maxvals
 
 
-def transform_preds(coords, original_size, output_size, train=False):
+# def transform_preds(coords, original_size, output_size, train=False):
+def transform_preds(coords, original_size, output_size):
     '''
     Transformation to original size
     '''
-    if train:
-        target_coords = torch.zeros(coords.shape)
-        trans = get_resize_AF(original_size=output_size, output_size=original_size)
-        for p in range(coords.shape[0]):
-            target_coords[p, 0:2] = affine_transform(
-                    coords[p, 0:2],
-                    trans,
-                    train=train
-                    )
+    # if train:
+    #     target_coords = torch.zeros(coords.shape)
+    #     trans = get_resize_AF(original_size=output_size, output_size=original_size)
+    #     for p in range(coords.shape[0]):
+    #         target_coords[p, 0:2] = affine_transform(
+    #                 coords[p, 0:2],
+    #                 trans,
+    #                 train=train
+    #                 )
 
-    else:
-        target_coords = np.zeros(coords.shape)
-        trans = get_resize_AF(original_size=output_size, output_size=original_size)
-        for p in range(coords.shape[0]):
-            target_coords[p, 0:2] = affine_transform(
-                    coords[p, 0:2],
-                    trans
-                    )
+    # else:
+    target_coords = np.zeros(coords.shape)
+    trans = get_resize_AF(original_size=output_size, output_size=original_size)
+    for p in range(coords.shape[0]):
+        target_coords[p, 0:2] = affine_transform(
+                coords[p, 0:2],
+                trans
+                )
 
     return target_coords
 
@@ -255,11 +260,12 @@ def transform_preds(coords, original_size, output_size, train=False):
 '''
 Training
 '''
-def compute_distance(output, points_vis, points_scale):
+# def compute_distance(output, points_vis, points_scale):
+def compute_distance(output, points_vis):
     batch_size = output.shape[0]
     num_points = output.shape[1]
 
-    preds, _ = get_final_preds(output, points_scale, train=True) # Include False and True for train
+    preds, _ = get_final_preds(output, scale=None, train=True) # Include False and True for train
 
     preds_dist = torch.zeros((batch_size, num_points // 2, 2), dtype=torch.float32)
 
@@ -269,22 +275,28 @@ def compute_distance(output, points_vis, points_scale):
                 if points_vis[b ,pt, 0] > 0 and points_vis[b, (pt + 2), 0] > 0: #####
 
                     # Right/Left
-                    x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / points_scale[b][0]
-                    y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / points_scale[b][1]
+                    # x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / points_scale[b][0]
+                    # y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / points_scale[b][1]
+                    x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / 48
+                    y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / 64
                     c0 = torch.tensor([x0_dist, y0_dist], dtype=torch.float32)
                     preds_dist[b, pt // 2, 0] = torch.linalg.norm(c0)
 
                     # Down
-                    x1_dist = abs(preds[b, pt, 0] - preds[b, (pt + 2), 0]) / points_scale[b][0]
-                    y1_dist = abs(preds[b, pt, 1] - preds[b, (pt + 2), 1]) / points_scale[b][1]
+                    # x1_dist = abs(preds[b, pt, 0] - preds[b, (pt + 2), 0]) / points_scale[b][0]
+                    # y1_dist = abs(preds[b, pt, 1] - preds[b, (pt + 2), 1]) / points_scale[b][1]
+                    x1_dist = abs(preds[b, pt, 0] - preds[b, (pt + 2), 0]) / 48
+                    y1_dist = abs(preds[b, pt, 1] - preds[b, (pt + 2), 1]) / 64
                     c1 = torch.tensor([x1_dist, y1_dist], dtype=torch.float32)
                     preds_dist[b, pt // 2, 1] = torch.linalg.norm(c1)
 
                 elif points_vis[b, pt, 0] > 0 and points_vis[b, (pt + 2), 0] == 0:
 
                 # Right/Left 
-                    x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / points_scale[b][0]
-                    y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / points_scale[b][1]
+                    # x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / points_scale[b][0]
+                    # y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / points_scale[b][1]
+                    x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / 48
+                    y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / 64
                     c0 = torch.tensor([x0_dist, y0_dist], dtype=torch.float32)
                     preds_dist[b, pt // 2, 0] = torch.linalg.norm(c0)
 
@@ -297,8 +309,10 @@ def compute_distance(output, points_vis, points_scale):
             elif pt == (num_points - 2):
                 if points_vis[b, pt, 0] > 0:
                     # Right/Left
-                    x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / points_scale[b][0]
-                    y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / points_scale[b][1]
+                    # x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / points_scale[b][0]
+                    # y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / points_scale[b][1]
+                    x0_dist = abs(preds[b, pt, 0] - preds[b, (pt + 1), 0]) / 48
+                    y0_dist = abs(preds[b, pt, 1] - preds[b, (pt + 1), 1]) / 64
                     c0 = torch.tensor([x0_dist, y0_dist], dtype=torch.float32)
                     preds_dist[b, pt // 2, 0] = torch.linalg.norm(c0)
 
@@ -311,8 +325,7 @@ def compute_distance(output, points_vis, points_scale):
 
 
 if __name__ == '__main__':
-    test_heatmap = torch.randn(4, 12, 64, 48)
-    scale = torch.randn(4,2)
-    # scale = np.random.randn(4,2)
-    preds, _ = get_final_preds(test_heatmap, scale, train=False)
-    print(type(preds))
+    target_weight = torch.randint(low=0, high=2, size=(1,12,1))
+    test_heatmap = torch.randn(2, 12, 64, 48).to('cuda')
+    vis = torch.randn(2, 12, 2).to('cuda')
+    print(compute_distance(test_heatmap, vis))

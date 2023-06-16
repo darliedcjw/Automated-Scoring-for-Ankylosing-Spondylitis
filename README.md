@@ -1,4 +1,4 @@
-# Project-4
+# Project Description
 
 A user interface application developed using OpenCV and Tinkter that helps to monitor the medical condition of ankylosing spondylitis.
 The application uses keypoints detection (HRNet) and image classification (ResNet152) to achieve the outcome.
