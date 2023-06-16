@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-torch.manual_seed(0)
-
 resnet152_config = [
     (64, 7, 2), # Out, Kernel, Stride
     "MP",

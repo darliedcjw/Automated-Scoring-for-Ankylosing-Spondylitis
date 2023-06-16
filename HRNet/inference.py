@@ -1,12 +1,8 @@
-from dis import Instruction
-from multiprocessing.resource_sharer import stop
 import cv2
 import numpy as np
 import torch
 from torchvision.transforms import transforms
-
 from misc.utils import get_final_preds
-
 from HRnet import HRNet
 
 class SimpleHRNet:
@@ -92,26 +88,3 @@ class SimpleHRNet:
         preds, maxvals = get_final_preds(out, scale)
 
         return preds, maxvals
-
-if __name__ == '__main__':
-    import torch
-    from torch import nn
-    import cv2
-    import os
-
-    simplehrnet = SimpleHRNet(c=48, key=12, checkpoint_path='./logs/20221123_0906/checkpoint_best_loss.pth', device=torch.device('cuda'))
-    Instruction = True
-
-    for image in os.listdir('./datasets/COCO/default_val'):
-        if Instruction == True:
-            image = cv2.imread(os.path.join('./datasets/COCO/default_val', image))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            out = simplehrnet.predict_single(image)
-            
-            # Out: Batch, Points, XY
-
-            for pair in out[0][0]:
-                image = cv2.circle(image, (int(pair[0]), int(pair[1])), radius=5, color=(255, 255, 255), thickness=-1)
-        
-            cv2.imshow('Image', cv2.resize(image, (1000, 1000)))
-            cv2.waitKey(1000)

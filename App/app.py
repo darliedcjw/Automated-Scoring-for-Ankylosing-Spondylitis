@@ -1,20 +1,15 @@
 import os
-import pandas as pd
+from typing import List
 import numpy as np
 import tkinter as tk
 import cv2
 import json
-import re
-import shutil
 import argparse
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-from torchvision.models import resnet152
 from torchvision import transforms
-
-from misc.utils import affine_transform, get_angle
+from utils import affine_transform, get_angle
 from inference import SimpleHRNet, SimpleResNet152
+
 
 
 def app(device, res_cpath_1, res_cpath_2):
@@ -23,12 +18,12 @@ def app(device, res_cpath_1, res_cpath_2):
     '''
     b: bounding box
     c: classify
-    m: mSASSS scores
+    m: edit mSASSS scores
     o: original points
     p: plot points
     q: quit
     r: clear points
-    s: edit mSASSS scores
+    s: save annotation
     v: visibility checkbox
     '''
 
@@ -726,7 +721,7 @@ def CallBackFunc(event, x, y, flags, param):
         cv2.imshow(windowName, resize_image)
 
 
-def main(ipath, hr_cpath, res_cpath_1, res_cpath_2, device):
+def main(ipath, hr_cpath, res_cpath_1, res_cpath_2, view, device):
     global windowName, image, height, width, clone, resize_image, src, dst, p, mv, p_original, mv_original, mSASSS
 
     mSASSS = {}
@@ -747,7 +742,7 @@ def main(ipath, hr_cpath, res_cpath_1, res_cpath_2, device):
 
         # Affine Transformation
         src = np.float32([[0, 0], [width, 0], [0, height]])
-        dst = np.float32([[0, 0], [1000, 0], [0, 1000]])
+        dst = np.float32([[0, 0], [view[0], 0], [0, view[1]]])
         m = cv2.getAffineTransform(src=src, dst=dst)
         resize_image = cv2.warpAffine(image, M=m, dsize=(1000, 1000))
 
@@ -768,11 +763,12 @@ def main(ipath, hr_cpath, res_cpath_1, res_cpath_2, device):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ipath', '-ip', help='path to image folder', type=str,  default='datasets/COCO/Test')
+    parser.add_argument('--ipath', '-ip', help='path to image folder', type=str,  default='datasets/COCO/default')
     parser.add_argument('--res_cpath_1', '-rcp1', help='path to resnet checkpoint for no3, 3', type=str,  default='logs/3_No3/130423_100946/checkpoint_best_0.2344_0.8750.pth')
     parser.add_argument('--res_cpath_2', '-rcp2', help='path to resnet checkpoint for 0, 1, 2', type=str,  default='logs/0_1_2/110423_150447/checkpoint_best_0.2873_0.9748.pth')
     parser.add_argument('--hr_cpath', '-hcp', help='path to hrnet checkpoint', type=str,  default='logs/kp/checkpoint_best_acc_0.9928728138145647.pth')
-    parser.add_argument('--device', '-d', help='device', type=str, default='cuda:0')
+    parser.add_argument('--view', '-v', help='viewing dimension', type=List[int], default=[1000, 1000])
+    parser.add_argument('--device', '-d', help='device', type=str, default='cpu')
     args = parser.parse_args()
 
     main(**args.__dict__)

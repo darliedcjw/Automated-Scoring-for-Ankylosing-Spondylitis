@@ -2,14 +2,10 @@ import os
 import numpy as np
 from tqdm import tqdm
 import cv2
-
 import torch
 from torchvision import transforms
 from pycocotools.coco import COCO
-
 from misc.utils import get_resize_AF, affine_transform, evaluate_pck_accuracy
-
-
 
 class COCODataset():
     def __init__(self,

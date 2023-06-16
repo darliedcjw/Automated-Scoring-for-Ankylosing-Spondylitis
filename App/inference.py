@@ -1,21 +1,10 @@
-from dis import Instruction
-from multiprocessing.resource_sharer import stop
 import cv2
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-
-from torchvision.models import resnet152
 from torchvision.transforms import transforms
-
-from misc.utils import get_final_preds
-
+from utils import get_final_preds
 from HRnet import HRNet
 from ResNet152 import ResNet152
-
-import sys
-
 
 class SimpleHRNet:
     def __init__(self,

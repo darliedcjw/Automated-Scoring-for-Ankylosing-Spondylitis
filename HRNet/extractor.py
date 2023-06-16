@@ -7,7 +7,6 @@ import re
 import shutil
 import argparse
 import torch
-
 from misc.utils import affine_transform, get_angle
 from inference import SimpleHRNet
 

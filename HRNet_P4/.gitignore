@@ -1,8 +1,0 @@
-image_class
-datasets
-logs
-weights
-__pycache__
-*.pyc
-.DS_Store
-Try.ipynb
